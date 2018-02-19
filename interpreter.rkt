@@ -43,9 +43,9 @@
 (define mstate_remove
   (lambda (var state)
     (cond
-      ((null? (vars state)) state)                                                                                     ; if the state is null, return the empty state
-      ((eq? var (mstate_var1 state)) (mstate_cdrs state))                                                ; if the first variable of the state equals the variable to be removed, then return the rest of the state without that binding
-      (else (mstate_add (mstate_var1 state) (caadr state) (mstate_remove var (mstate_cdrs state)))))))   ;
+      ((null? (vars state)) state)                                                                            ; if the state is null, return the empty state
+      ((eq? var (mstate_var1 state)) (mstate_cdrs state))                                                     ; if the first variable of the state equals the variable to be removed, then return the rest of the state without that binding
+      (else (mstate_add (mstate_var1 state) (mstate_val1 state) (mstate_remove var (mstate_cdrs state)))))))  ; otherwise, add the first binding to the new state and call the function on cdrs
 
 ; returns true iff variable is in the state
 (define mstate_member?
@@ -119,7 +119,7 @@
       ((eq? '% (operator x)) (remainder (M_value_math (operand1 x)) (M_value_math(operand2 x))))
       (else (error 'badop "Undefined operator")))))
 
-; M_value_math takes the comparison operators <,>,<=,>=,==,!= and evaluates in scheme
+; M_value_comp takes the comparison operators <,>,<=,>=,==,!= and evaluates in scheme
 (define M_value_comp
   (lambda (x)
     (cond
@@ -130,7 +130,7 @@
       ((eq? '== (operator x)) (eq? (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
       ((eq? '!= (operator x)) (not (eq? ((M_value_comp (operand1 x)) (M_value_comp (operand2 x)))))))))
 
-; M_value_math takes the boolean operators && and || and evaluates in scheme
+; M_value_bool takes the boolean operators && and || and evaluates in scheme
 (define M_value_bool
   (lambda (x)
     (cond
