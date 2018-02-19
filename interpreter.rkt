@@ -87,8 +87,9 @@
 
 (define m_state_if
   (lambda (cond1 then_stmt else_stmt)
-    ((m_bool(cond1)) (then_stmt)) ; need taylor's code
-    (else else_stmt)))
+    (m_bool(cond1)
+           then_stmt
+           else_stmt)))
 
 ; while statments
 ; i need to use the tail end recursion, I know I did not implement this correctly
