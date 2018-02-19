@@ -97,4 +97,44 @@
     ((m_bool(cond1)) (while_stmt(cond1 then_stmt)))
     (else break)))
     
+; Taylor Smith tps45
+; helper functions 
+(define operator
+  (lambda (x)
+    (cadr x)))
+
+(define operand1 car)
+
+(define operand2 caddr)
+
+; M_value_math takes the mathematical operators +,-,*,/,% and evaluates in scheme
+(define M_value_math
+  (lambda (x)
+    (cond
+      ((number? x) x)
+      ((eq? '+ (operator x)) (+ (M_value_math (operand1 x))(M_value_math (operand2 x))))
+      ((eq? '- (operator x)) (- (M_value_math (operand1 x)) (M_value_math(operand2 x))))
+      ((eq? '* (operator x)) (* (M_value_math (operand1 x)) (M_value_math(operand2 x))))
+      ((eq? '/ (operator x)) (quotient (M_value_math (operand1 x)) (M_value_math(operand2 x))))
+      ((eq? '% (operator x)) (remainder (M_value_math (operand1 x)) (M_value_math(operand2 x))))
+      (else (error 'badop "Undefined operator")))))
+
+; M_value_math takes the comparison operators <,>,<=,>=,==,!= and evaluates in scheme
+(define M_value_comp
+  (lambda (x)
+    (cond
+      ((eq? '< (operator x)) (< (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
+      ((eq? '> (operator x)) (> (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
+      ((eq? '<= (operator x)) (<= (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
+      ((eq? '>= (operator x)) (>= (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
+      ((eq? '== (operator x)) (eq? (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
+      ((eq? '!= (operator x)) (not (eq? ((M_value_comp (operand1 x)) (M_value_comp (operand2 x)))))))))
+
+; M_value_math takes the boolean operators && and || and evaluates in scheme
+(define M_value_bool
+  (lambda (x)
+    (cond
+      ((eq? '&& (operator x)) (and (M_value_bool (operand1 x)) (M_value_bool (operand2 x))))
+      ((eq? '|| (operator x)) (or (M_value_bool (operand1 x)) (M_value_bool (operand2 x)))))))
+    
 
