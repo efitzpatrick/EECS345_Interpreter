@@ -116,8 +116,15 @@
       ((eq? 'if (car stmt)) (m_state_if stmt state))
       ((eq? 'var (car stmt)) (m_state_declare stmt state))
       ((eq? '= (car stmt)) ((m_state_assign stmt state)))
-      ((eq? 'return (car stmt)) (state_add "return value" (m_value (cadr stmt) state) (state_remove "return value" state)))
+      ((eq? 'return (car stmt)) (toAtoms (state_add "return value" (m_value (cadr stmt) state) (state_remove "return value" state))))
       ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
+      
+(define toAtoms
+  (lambda (x)
+    (cond
+      ((eq? #t x) 'true)
+      ((eq? #f x) 'false)
+      (else x))))
       
 
 ; Ellie Fitzpatrick
