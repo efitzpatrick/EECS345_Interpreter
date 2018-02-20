@@ -151,43 +151,42 @@
         
         
 ; Taylor Smith tps45
-; helper functions 
-(define operator
-  (lambda (x)
-    (cadr x)))
 
-(define operand1 car)
-
+(define operator car)
+(define operand1 cadr)
 (define operand2 caddr)
 
-; M_value_math takes the mathematical operators +,-,*,/,% and evaluates in scheme
-(define M_value_math
-  (lambda (x)
+(define binary-ops
+  (lambda (op)
     (cond
-      ((number? x) x)
-      ((eq? '+ (operator x)) (+ (M_value_math (operand1 x))(M_value_math (operand2 x))))
-      ((eq? '- (operator x)) (- (M_value_math (operand1 x)) (M_value_math(operand2 x))))
-      ((eq? '* (operator x)) (* (M_value_math (operand1 x)) (M_value_math(operand2 x))))
-      ((eq? '/ (operator x)) (quotient (M_value_math (operand1 x)) (M_value_math(operand2 x))))
-      ((eq? '% (operator x)) (remainder (M_value_math (operand1 x)) (M_value_math(operand2 x))))
-      (else (error 'badop "Undefined operator")))))
+      ((eq? op '+) +)
+      ((eq? op '-) -)
+      ((eq? op '*) *)
+      ((eq? op '/) quotient)
+      ((eq? op '%) remainder)
+      ((eq? '<) <)
+      ((eq? '>) >)
+      ((eq? '<=) <=)
+      ((eq? '>=) >=)
+      ((eq? '==) =)
+      ((eq? '!=) !=)
+      ((eq? op '&&) (lambda (x y) (and x y)))
+      ((eq? op '||) (lambda (x y) (or x y))))))
 
-; M_value_comp takes the comparison operators <,>,<=,>=,==,!= and evaluates in scheme
-(define M_value_comp
-  (lambda (x)
+(define !=
+  (lambda (x y)
+    (not (= x y))))
+
+(define unary-ops
+  (lambda (op)
     (cond
-      ((eq? '< (operator x)) (< (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
-      ((eq? '> (operator x)) (> (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
-      ((eq? '<= (operator x)) (<= (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
-      ((eq? '>= (operator x)) (>= (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
-      ((eq? '== (operator x)) (eq? (M_value_comp (operand1 x)) (M_value_comp (operand2 x))))
-      ((eq? '!= (operator x)) (not (eq? ((M_value_comp (operand1 x)) (M_value_comp (operand2 x)))))))))
+      ((eq? op '!) not)
+      ((eq? op '-) (lambda (x) (- 0 x))))))
 
-; M_value_bool takes the boolean operators && and || and evaluates in scheme
-(define M_value_bool
-  (lambda (x)
-    (cond
-      ((eq? '&& (operator x)) (and (M_value_bool (operand1 x)) (M_value_bool (operand2 x))))
-      ((eq? '|| (operator x)) (or (M_value_bool (operand1 x)) (M_value_bool (operand2 x)))))))
-    
-
+; returns the value of an arithemtic expression whether the operator is unary or binary
+(define m_value_expression
+  (lambda (expr state)
+    (if (eq? 3 (length expr))
+        ((binary-ops (operator expr))(m_value (operand1 expr) state) (m_value (operand2 expr) state))
+        ((unary-ops (operator expr) (m_value (operand1 expr) state))))))
+        
