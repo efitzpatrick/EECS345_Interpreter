@@ -16,12 +16,12 @@
           (if (state_member? "return" state)
               (state_lookup "return" state)
               "no return statement.")
-      (interpret_parsetree (cdr parsetree) (m_state(car parsetree) state)))))
+          (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
 
 
 (define interpret
   (lambda (filename)
-    (interpret_parsetree (parser filename) state_new)))
+    (interpret_parsetree (parser filename) (state_new))))
 
     
 ; defining commonly used words for abstraction
@@ -65,10 +65,9 @@
 ; returns true iff the state is empty
 (define state_null?
   (lambda (state)
-    (if
-      (null? (vars state))                                                                                    ; if there are no vriables in the state, then the state is empty
-      #t
-      #f)))                                                                                                   ; otherwise, the state is not null, so it returns false
+    (if (eq? 'null (vars state))                                                                                    ; if there are no vriables in the state, then the state is empty
+        #t
+        #f)))                                                                                                   ; otherwise, the state is not null, so it returns false
 
 ; finds the value for the given variable
 (define state_lookup
@@ -108,8 +107,8 @@
 (define m_state
   (lambda (expr state)
     (cond
-      ((list? expr) (m_state_list expr state))
-      (else (m_state_atom expr state)))))
+      ((list? expr) (m_value_list expr state))
+      (else (m_value_atom expr state)))))
       
 (define m_state_statement
   (lambda (stmt state)
@@ -214,7 +213,7 @@
 ; returns value of an assignment statement
 (define m_value_statement
   (lambda (expr state)
-    (if (= (car expr) '=)
+    (if (eq? (car expr) '=)
         (m_value (caddr expr) state)
         #f)))
 
