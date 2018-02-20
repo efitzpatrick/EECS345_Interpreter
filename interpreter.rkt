@@ -10,10 +10,17 @@
 ; Maintains a state for the variables and returns an error message if the user attempts to use a
 ; variable before it is declared. Uses the Scheme function (error ...) to return the error.
 
-(define parsetree
+(define interpret_parsetree
   (lambda (parsetree state)
-    (cond
-      (and (null? parsetree)))))
+      (if (null? parsetree) (
+                          ;guiliana fills in
+                          ))
+      ((interpret_parsetree(cdr parsetree)(m_state(car parsetree) state) ))))
+
+
+(define interpret
+  (lambda (filename)
+    (interpret_parsetree (parser filename) state_new));
 
     
 ; defining commonly used words for abstraction
