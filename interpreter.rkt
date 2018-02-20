@@ -80,7 +80,7 @@
 (define m_state_if
   (lambda (cond1 then_stmt else_stmt)
     (if (m_bool(cond1)) then_stmt)
-    (else else_stmt)))
+    ( else_stmt)))
 
 ; while statments
 ; i need to use the tail end recursion, I know I did not implement this correctly
@@ -88,13 +88,13 @@
   (lambda (cond1 then_stmt state)
     (if (m_bool(cond1))
         (m_state(while_stmt(cond1 then_stmt m_state(then_stmt state)))))
-    (else (mstate(cond1 state)))))
+    (mstate(cond1 state))))
 
 ; return statement
 (define return_stmt
-  (lambda (ex)
-    (if (m_state_member(x state)) (m_statelookup(x state)))
-    (else m_value_math(x))))
+  (lambda (x)
+    (if (m_state_member(x state)) (m_statelookup(x state))) ;if it is a variable, return the variable
+    (m_value_math(x)))) ;if it is an expression, return the value of the expression
     
 ; Taylor Smith tps45
 ; helper functions 
