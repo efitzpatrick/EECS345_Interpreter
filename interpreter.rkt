@@ -1,5 +1,6 @@
 ; Giuliana Conte gdc24
 ; Ellie Fitzpatrick eef33
+; Taylor Smith tps45
 
 (require "simpleParser.scm")         ; load parser
 
@@ -16,8 +17,8 @@
 ; defining commonly used words for abstraction
 (define vars car)           ; list of variables in the state
 (define vals cdr)           ; list of values in the state
-(define state_var1 caar)   ; first variable in the state
-(define state_val1 caadr)  ; first value in the state
+(define state_var1 caar)    ; first variable in the state
+(define state_val1 caadr)   ; first value in the state
 (define empty_vars (list))  ; empty list of variables
 (define empty_vals (list))  ; empty list of values
 
@@ -71,6 +72,35 @@
 (define state_cdrs
   (lambda (state)
     (list (cdar state) (cdadr state))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  m_state, m_value, and m_boolean                                                                                  ;
+;                                                                                                                   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; m_value takes an expression and a state and returns the value of the expression
+(define m_value
+  (lambda (expr state)
+    (cond
+      ((atom? expr) m_value_atom expr state)
+      (else m_value_list expr state))))
+
+; m_boolean takes an expression and a state and returns the value of the expression
+; (note: we handle booleans in the m_value functions, so that is why m_boolean and m_value are the same) 
+(define m_boolean
+  (lambda (expr state)
+    (cond
+      ((atom? expr) m_value_atom expr state)
+      (else m_value_list expr state))))
+
+; m_state returns the updated state after the parse tree has been evaluated
+(define m_state
+  (lambda (expr state)
+    (cond
+      ((list? expr) (m_state_list expr state))
+      (else (m_state_atom expr state)))))
+      
 
 ; Ellie Fitzpatrick
 ; eef33
