@@ -1,5 +1,5 @@
-; Giuliana Conte
-; gdc24
+; Giuliana Conte gdc24
+; Ellie Fitzpatrick eef33
 
 (require "simpleParser.scm")         ; load parser
 
@@ -13,98 +13,80 @@
   (lambda (filename)
     (parser (filename))));
     
+; defining commonly used words for abstraction
+(define vars car)           ; list of variables in the state
+(define vals cdr)           ; list of values in the state
+(define state_var1 caar)   ; first variable in the state
+(define state_val1 caadr)  ; first value in the state
+(define empty_vars (list))  ; empty list of variables
+(define empty_vals (list))  ; empty list of values
 
-
-; all state functions. implemented in two lists:
-; first list is all the variable names and second list is all the values, since that will be easier for the future
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; interacting with the state functions. implemented in two lists:                                                   ;
+; first list is all the variable names and second list is all the values, since that will be easier for the future  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; creates an empty state
-(define mstate_new
-  (lambda () '(() ())))
-
-; list of variables in the state
-(define vars car)
-
-; list of values in the state
-(define vals cdr)
-
-; first variable in the state
-(define mstate_var1 caar)
-
-; first value in the state
-(define mstate_val1 caadr)
+(define state_new
+  (lambda () (list empty_vars empty_vals)))                                                                   ; create a new state that contains a list, one of variables and one of values
 
 ; add a binding to the state
-(define mstate_add
-  (lambda (var val state)
-    (list (cons var (vars state)) (cons val (cadr state)))))
+(define state_add
+  (lambda (var val state)                                                                                     ; takes a variable, a value, and a state
+    (list (cons var (vars state)) (cons val (cadr state)))))                                                  ; add the variable to the list of variables; also add the value to the list of values
 
 ; remove a binding from the state
-(define mstate_remove
+(define state_remove
   (lambda (var state)
     (cond
       ((null? (vars state)) state)                                                                            ; if the state is null, return the empty state
-      ((eq? var (mstate_var1 state)) (mstate_cdrs state))                                                     ; if the first variable of the state equals the variable to be removed, then return the rest of the state without that binding
-      (else (mstate_add (mstate_var1 state) (mstate_val1 state) (mstate_remove var (mstate_cdrs state)))))))  ; otherwise, add the first binding to the new state and call the function on cdrs
+      ((eq? var (state_var1 state)) (state_cdrs state))                                                       ; if the first variable of the state equals the variable to be removed, then return the rest of the state without that binding
+      (else (state_add (state_var1 state) (state_val1 state) (state_remove var (state_cdrs state)))))))       ; otherwise, add the first binding to the new state and call the function on cdrs
 
 ; returns true iff variable is in the state
-(define mstate_member?
+(define state_member?
   (lambda (var state)
     (cond
-      ((mstate_null? state) #f)
-      ((eq? var (mstate_var1 state)) #t)
-      (else (mstate_member? var (mstate_cdrs state))))))
-      
+      ((state_null? state) #f)
+      ((eq? var (state_var1 state)) #t)
+      (else (state_member? var (state_cdrs state))))))
       
 ; returns true iff the state is empty
-(define mstate_null?
+(define state_null?
   (lambda (state)
     (if
-     (null? (vars state))
-     #t
-     #f)))
+      (null? (vars state))
+      #t
+      #f)))
 
 ; finds the value for the given variable
-(define mstate_lookup
+(define state_lookup
   (lambda (var state)
     (cond
-      ((mstate_null? state) (error "No such variable"))
-      ((eq? var (mstate_var1 state)) (mstate_val1 state))
-      (else (mstate_lookup var (mstate_cdrs state))))))
+      ((state_null? state) (error "No such variable"))
+      ((eq? var (state_var1 state)) (state_val1 state))
+      (else (state_lookup var (state_cdrs state))))))
 
 ; returns the state without the first binding
-(define mstate_cdrs
+(define state_cdrs
   (lambda (state)
     (list (cdar state) (cdadr state))))
-
-      
-      
-
-; Ellie Fitzpatrick
-; eef33
 
 ; if statements
 
 (define m_state_if
   (lambda (cond1 then_stmt else_stmt)
-    (if (m_bool(cond1)) then_stmt)
-    (else else_stmt)))
+    (m_bool(cond1)
+           then_stmt
+           else_stmt)))
 
 ; while statments
 ; i need to use the tail end recursion, I know I did not implement this correctly
 (define while_stmt
-  (lambda (cond1 then_stmt state)
-    (if (m_bool(cond1))
-        (m_state(while_stmt(cond1 then_stmt m_state(then_stmt state)))))
-    (else (mstate(cond1 state)))))
-
-; return statement
-(define return_stmt
-  (lambda (ex)
-    (if (m_state_member(x state)) (m_statelookup(x state)))
-    (else m_value_math(x))))
-
-
+  (lambda (cond1 then_stmt break)
+    ((m_bool(cond1)) (while_stmt(cond1 then_stmt)))
+    (else break)))
+    
 ; Taylor Smith tps45
 ; helper functions 
 (define operator
