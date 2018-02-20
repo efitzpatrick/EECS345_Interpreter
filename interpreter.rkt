@@ -12,15 +12,16 @@
 
 (define interpret_parsetree
   (lambda (parsetree state)
-      (if (null? parsetree) (
-                          ;guiliana fills in
-                          ))
-      ((interpret_parsetree (cdr parsetree) (m_state(car parsetree) state) ))))
+      (if (null? parsetree)
+          (if (state_member? "return" state)
+              (state_lookup "return" state)
+              "no return statement.")
+      (interpret_parsetree (cdr parsetree) (m_state(car parsetree) state)))))
 
 
 (define interpret
   (lambda (filename)
-    (interpret_parsetree (parser filename) state_new));
+    (interpret_parsetree (parser filename) state_new)))
 
     
 ; defining commonly used words for abstraction
@@ -142,30 +143,32 @@
 (define m_state_while
   (lambda (expression state)
     (if (m_bool((cadr expression) state))
-        (m_state(while_stmt(expression m_state(then_stmt state)))))
-    (mstate(cond1 state))))
+        (m_state(while_stmt(expression m_state(then_stmt state))))
+        (mstate(cond1 state)))))
 
 ; return statement
 (define m_state_return
   (lambda (x)
-    (if (m_state_member(x state)) (m_statelookup(x state))) ;if it is a variable, return the variable
-    (m_value_math(x)))) ;if it is an expression, return the value of the expression
+    (if (state_member? x state)
+        (m_statelookup(x state)) ;if it is a variable, return the variable
+        (m_value_math(x))))) ;if it is an expression, return the value of the expression
 
 ; adds the variable 'var' to the vars list with a value of null
 ; if expression has a len of 2
 (define m_state_declare
   (lambda (expression state)
-      (if 'var (car expression)
-          (if eq? ('= (caddr expression))
-              (state_Add (cadr expression) (cdddr expression) state)) ;if a declaration and assignment, declare and assign the value
-          (m_add((cadr expression) null state))))) ;otherwise, just declare the values with a null as the value
+      (if (eq? 'var (car expression))
+          (if (eq? '= (caddr expression))
+              (state_add (cadr expression) (cdddr expression) state) ;if a declaration and assignment, declare and assign the value
+              (state_add((cadr expression) null state)))))) ;otherwise, just declare the values with a null as the value
            
 ;if the expression has a len of 3
 (define m_state_assign
   (lambda (expression state)
     (if (eq? '= (cadr expression))
-        (if (state_member? (car expression) state) (state_add (car expression) (cddr expression) (state_remove (car expression) state))) ;if the variable is in the state, declare the variable
-        (error("Variable not declared")))))
+        (if (state_member? (car expression) state)
+            (state_add (car expression) (cddr expression) (state_remove (car expression) state)) ;if the variable is in the state, declare the variable
+            (error("Variable not declared"))))))
         
         
 ; Taylor Smith tps45
@@ -233,6 +236,3 @@
       ((eq? expr 'true) #t)
       ((eq? expr 'false) #f)
       (else (state_lookup expr state)))))
-        
-        
-        
