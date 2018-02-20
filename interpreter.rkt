@@ -192,3 +192,31 @@
         ((binary-ops (operator expr))(m_value (operand1 expr) state) (m_value (operand2 expr) state))
         ((unary-ops (operator expr) (m_value (operand1 expr) state))))))
         
+; returns value of an assignment statement
+(define m_value_statement
+  (lambda (expr state)
+    (if (= (car expr) '=)
+        (m_value (caddr expr) state)
+        #f)))
+
+; defines an operator that is a statement
+(define statement '(var = if return))
+
+; returns a value for part of the parse tree that is a list
+(define m_value_list
+  (lambda (expr state)
+    (if (member (car expr) statement)
+        (m_value_statement expr state)
+        (m_value_expression expr state))))
+
+; returns a value for part of the parse tree that is an atom
+(define m_value_atom
+  (lambda (expr state)
+    (cond
+      ((or (boolean? expr) (number? expr)) expr)
+      ((eq? expr 'true) #t)
+      ((eq? expr 'false) #f)
+      (else (state_lookup expr state)))))
+        
+        
+        
