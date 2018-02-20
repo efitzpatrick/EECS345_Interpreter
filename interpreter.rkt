@@ -15,7 +15,7 @@
       (if (null? parsetree) (
                           ;guiliana fills in
                           ))
-      ((interpret_parsetree(cdr parsetree)(m_state(car parsetree) state) ))))
+      ((interpret_parsetree (cdr parsetree) (m_state(car parsetree) state) ))))
 
 
 (define interpret
