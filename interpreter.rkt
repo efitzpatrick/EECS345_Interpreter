@@ -110,6 +110,15 @@
       ((list? expr) (m_state_list expr state))
       (else (m_state_atom expr state)))))
       
+(define m_state_statement
+  (lambda (stmt state)
+    (cond
+      ((eq? 'if (car stmt)) (m_state_if stmt state))
+      ((eq? 'var (car stmt)) (m_state_declare stmt state))
+      ((eq? '= (car stmt)) ((m_state_assign stmt state)))
+      ((eq? 'return (car stmt)) (state_add "return value" (m_value (cadr stmt) state) (state_remove "return value" state)))
+      ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
+      
 
 ; Ellie Fitzpatrick
 ; eef33
