@@ -108,31 +108,48 @@
 ; if statements
 
 
-;3 variable (if, then-stmt, else-stmt)
+;3 variable (if, then-stmt, else-stmt)and state
 (define m_state_if
-  (lambda (cond1 then_stmt else_stmt)
-    (if (m_bool(cond1)) then_stmt)
-    ( else_stmt)))
+  (lambda (expression state)
+    (if (m_bool((cadr expression) state) m_state((caddr lis) state))
+    ( m_state((cadddr lis) state)))))
 
 ;2 variable (if, then-stmt)
 (define m_state_if
-  (lambda (cond1 then_stmt)
-    (if (m_bool(cond1)) then_stmt)))
+  (lambda (expression state)
+    (if (m_bool(cadr expression)) m_state((caddr lis) state))))
 
 ; while statments
 ; i need to use the tail end recursion, I know I did not implement this correctly
 (define m_state_while
-  (lambda (cond1 then_stmt state)
-    (if (m_bool(cond1))
-        (m_state(while_stmt(cond1 then_stmt m_state(then_stmt state)))))
+  (lambda (expression state)
+    (if (m_bool((cadr expression) state))
+        (m_state(while_stmt(expression m_state(then_stmt state)))))
     (mstate(cond1 state))))
 
 ; return statement
-(define m_state_while
+(define m_state_return
   (lambda (x)
     (if (m_state_member(x state)) (m_statelookup(x state))) ;if it is a variable, return the variable
     (m_value_math(x)))) ;if it is an expression, return the value of the expression
-    
+
+; adds the variable 'var' to the vars list with a value of null
+; if expression has a len of 2
+(define m_state_declare
+  (lambda (expression state)
+      (if 'var (car expression)
+          (if eq? ('= (caddr expression))
+              (state_Add (cadr expression) (cdddr expression) state)) ;if a declaration and assignment, declare and assign the value
+          (m_add((cadr expression) null state))))) ;otherwise, just declare the values with a null as the value
+           
+;if the expression has a len of 3
+(define m_state_assign
+  (lambda (expression state)
+    (if (eq? '= (cadr expression))
+        (if (state_member? (car expression) state) (state_add (car expression) (cddr expression) (state_remove (car expression) state))) ;if the variable is in the state, declare the variable
+        (error("Variable not declared")))))
+        
+        
 ; Taylor Smith tps45
 ; helper functions 
 (define operator
