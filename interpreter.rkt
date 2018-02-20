@@ -2,7 +2,7 @@
 ; Ellie Fitzpatrick eef33
 ; Taylor Smith tps45
 
-(require "simpleParser.scm")         ; load parser
+(require "simpleParser.scm")                                                                                  ; load parser
 
 
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
@@ -10,9 +10,11 @@
 ; Maintains a state for the variables and returns an error message if the user attempts to use a
 ; variable before it is declared. Uses the Scheme function (error ...) to return the error.
 
-(define interpret
-  (lambda (filename)
-    (parser (filename))));
+(define parsetree
+  (lambda (parsetree state)
+    (cond
+      (and (null? parsetree)))))
+
     
 ; defining commonly used words for abstraction
 (define vars car)           ; list of variables in the state
@@ -48,34 +50,34 @@
 (define state_member?
   (lambda (var state)
     (cond
-      ((state_null? state) #f)
-      ((eq? var (state_var1 state)) #t)
-      (else (state_member? var (state_cdrs state))))))
+      ((state_null? state) #f)                                                                                ; if the state is empty, the variable is not in the state, so return #f
+      ((eq? var (state_var1 state)) #t)                                                                       ; if the var equals the first var in the state, return #t
+      (else (state_member? var (state_cdrs state))))))                                                        ; otherwise, perform the function on the state without the first binding
       
 ; returns true iff the state is empty
 (define state_null?
   (lambda (state)
     (if
-      (null? (vars state))
+      (null? (vars state))                                                                                    ; if there are no vriables in the state, then the state is empty
       #t
-      #f)))
+      #f)))                                                                                                   ; otherwise, the state is not null, so it returns false
 
 ; finds the value for the given variable
 (define state_lookup
   (lambda (var state)
     (cond
-      ((state_null? state) (error "No such variable"))
-      ((eq? var (state_var1 state)) (state_val1 state))
-      (else (state_lookup var (state_cdrs state))))))
+      ((state_null? state) (error "No such variable"))                                                        ; if the state is null, there is no variable with the name that is being looked up, so throw an error
+      ((eq? var (state_var1 state)) (state_val1 state))                                                       ; check if the variable is the same as the state
+      (else (state_lookup var (state_cdrs state))))))                                                         ; otherwise, performs the lookup on the rest of the state
 
 ; returns the state without the first binding
 (define state_cdrs
   (lambda (state)
-    (list (cdar state) (cdadr state))))
+    (list (cdar state) (cdadr state))))                                                                       ; returns two lists within a list, each one without their first element
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  m_state, m_value, and m_boolean                                                                                  ;
+; m_state, m_value, and m_boolean functions to return the values from the parse tree                                ;
 ;                                                                                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -94,7 +96,7 @@
       ((atom? expr) m_value_atom expr state)
       (else m_value_list expr state))))
 
-; m_state returns the updated state after the parse tree has been evaluated
+; m_state returns the updated state after the expression from the parse tree has been evaluated
 (define m_state
   (lambda (expr state)
     (cond
