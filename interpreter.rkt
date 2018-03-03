@@ -248,7 +248,8 @@
 (define member?
   (lambda (x lis)
     (if (null? lis) #f
-        (if (equal? x (car lis)) #t
+        (if (equal? x (car lis))
+            #t
             (member? x (cdr lis))))))
 
 ; returns a value for part of the parse tree that is an atom
