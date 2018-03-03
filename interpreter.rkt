@@ -173,13 +173,13 @@
 ; This needs fixing because how do I deal with the potential for var x; and var x = 1;  without the expression list
 ; adds the variable 'var' to the vars list with a value of null
 ; parameters: the word var (if it is a declaration), variable
+(define m_state_declare_assign
+  (lambda (decl_stmt var_name value state)
+    (state_add var_name value state)))))
+
 (define m_state_declare
-  (lambda (expression state)
-    (if (eq? 'var (car expression))
-        (if (eq? '= (caddr expression))
-            (state_add (cadr expression) (cdddr expression) state) ;if a declaration and assignment, declare and assign the value
-            (state_add (cadr expression) null state))))) ;otherwise, just declare the values with a null as the value
-           
+  (lambda (decl_stmt var_name state)
+    (state_add decl_stmt null state)))
 ; This handles the situation x = 1;
 ;assigns a variable a value
 ; parameter: 
