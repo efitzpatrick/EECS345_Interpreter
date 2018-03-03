@@ -37,12 +37,13 @@
 ; first list is all the variable names and second list is all the values, since that will be easier for the future  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; creates an empty state
+; state_new creates an empty state
+; parameters: none
 (define state_new
   (lambda () (list empty_vars empty_vals)))
 
 ; add a binding to the state
-; takes a variable, a value, and a state
+; parameters: a variable, a value, and a state
 (define state_add
   (lambda (var val state)
     (list (cons var (vars state)) (cons val (cadr state)))))
@@ -59,24 +60,24 @@
 (define state_member?
   (lambda (var state)
     (cond
-      ((state_null? state) #f)                                                                                ; if the state is empty, the variable is not in the state, so return #f
-      ((eq? var (state_var1 state)) #t)                                                                       ; if the var equals the first var in the state, return #t
-      (else (state_member? var (state_cdrs state))))))                                                        ; otherwise, perform the function on the state without the first binding
+      ((state_null? state) #f) ; if the state is empty, the variable is not in the state, so return #f
+      ((eq? var (state_var1 state)) #t) ; if the var equals the first var in the state, return #t
+      (else (state_member? var (state_cdrs state)))))) ; otherwise, perform the function on the state without the first binding
       
 ; returns true iff the state is empty
 (define state_null?
   (lambda (state)
-    (if (eq? 'null (vars state))                                                                                    ; if there are no vriables in the state, then the state is empty
+    (if (eq? 'null (vars state))  ; if there are no vriables in the state, then the state is empty
         #t
-        #f)))                                                                                                   ; otherwise, the state is not null, so it returns false
+        #f)))     ; otherwise, the state is not null, so it returns false
 
 ; finds the value for the given variable
 (define state_lookup
   (lambda (var state)
     (cond
-      ((state_null? state) (error "No such variable"))                                                        ; if the state is null, there is no variable with the name that is being looked up, so throw an error
-      ((eq? var (state_var1 state)) (state_val1 state))                                                       ; check if the variable is the same as the state
-      (else (state_lookup var (state_cdrs state))))))                                                         ; otherwise, performs the lookup on the rest of the state
+      ((state_null? state) (error "No such variable")) ; if the state is null, there is no variable with the name that is being looked up, so throw an error
+      ((eq? var (state_var1 state)) (state_val1 state)) ; check if the variable is the same as the state
+      (else (state_lookup var (state_cdrs state)))))) ; otherwise, performs the lookup on the rest of the state
 
 ; returns the state without the first binding
 (define state_cdrs
