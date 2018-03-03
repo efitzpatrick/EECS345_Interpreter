@@ -127,6 +127,11 @@
       ((eq? #t x) 'true)
       ((eq? #f x) 'false)
       (else x))))
+
+(define atom?
+  (lambda (x) 
+    (and (not (pair? x))
+       (not (null? x)))))
       
 
 ; Ellie Fitzpatrick
@@ -229,7 +234,7 @@
 ; returns value of an assignment statement
 (define m_value_statement
   (lambda (expr state)
-    (if (eq? (car expr) '=)
+    (if (or (eq? (car expr) '=) (eq? (car expr) 'var))
         (m_value (caddr expr) state)
         #f)))
 
