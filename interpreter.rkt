@@ -2,7 +2,7 @@
 ; Ellie Fitzpatrick eef33@case.edu
 ; Taylor Smith tps45
 
-(require "simpleParser.scm")                                                                                  ; load parser
+(require "simpleParser.scm") ; load parser
 
 
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
@@ -15,7 +15,7 @@
     (if (null? parsetree)
         (if (state_member? 'return state)
             (state_lookup 'return state)
-            "no return statement.")
+            (error "no return statement."))
         (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
 
 
@@ -39,20 +39,21 @@
 
 ; creates an empty state
 (define state_new
-  (lambda () (list empty_vars empty_vals)))                                                                   ; create a new state that contains a list, one of variables and one of values
+  (lambda () (list empty_vars empty_vals)))
 
 ; add a binding to the state
+; takes a variable, a value, and a state
 (define state_add
-  (lambda (var val state)                                                                                     ; takes a variable, a value, and a state
-    (list (cons var (vars state)) (cons val (cadr state)))))                                                  ; add the variable to the list of variables; also add the value to the list of values
+  (lambda (var val state)
+    (list (cons var (vars state)) (cons val (cadr state)))))
 
 ; remove a binding from the state
 (define state_remove
   (lambda (var state)
     (cond
-      ((null? (vars state)) state)                                                                            ; if the state is null, return the empty state
-      ((eq? var (state_var1 state)) (state_cdrs state))                                                       ; if the first variable of the state equals the variable to be removed, then return the rest of the state without that binding
-      (else (state_add (state_var1 state) (state_val1 state) (state_remove var (state_cdrs state)))))))       ; otherwise, add the first binding to the new state and call the function on cdrs
+      ((null? (vars state)) state)
+      ((eq? var (state_var1 state)) (state_cdrs state))
+      (else (state_add (state_var1 state) (state_val1 state) (state_remove var (state_cdrs state)))))))
 
 ; returns true iff variable is in the state
 (define state_member?
