@@ -136,7 +136,7 @@
 
 ;If statement
 ; parameters: condition, then statment, else statement, and state
-if, then, and else statements
+;if, then, and else statements
 (define m_state_if
   (lambda (cond1 then-stmt else-stmt state)
     (if (m_bool cond1 state) (m_state then-stmt state))
@@ -147,22 +147,22 @@ if, then, and else statements
   (lambda (cond1 then-stmt state)
     (if (m_bool cond1) (m_state then-stmt state))))
 
-; I believe this function is incorrect
+
 ; while statment
 ; parameters: while condition, loop body, state
 (define m_state_while
   (lambda (cond1 body state)
-    (if (m_bool cond1 state))
-    (m_state (while_stmt cond1 body (m_state then_stmt state)))
-    (mstate cond1 state)))
+    (if (m_bool cond1 state)
+        (m_state (m_state_while cond1 body (m_state body state)))
+        (m_state cond1 state))))
 
 ; return statement
 ; paramteters: what you want to return
 (define m_state_return
   (lambda (x)
     (if (state_member? x state)
-        (m_statelookup x state)) ;if it is a variable, return the variable
-    (m_value_math(x))))) ;if it is an expression, return the value of the expression
+        (m_statelookup x state) ;if it is a variable, return the variable
+        (m_value_math(x))))) ;if it is an expression, return the value of the expression
 
 ; This needs fixing because how do I deal with the potential for var x; and var x = 1;  without the expression list
 ; adds the variable 'var' to the vars list with a value of null
@@ -238,7 +238,7 @@ if, then, and else statements
 ; returns a value for part of the parse tree that is a list
 (define m_value_list
   (lambda (expr state)
-    (if (member (car expr) statement)
+    (if (member? (car expr) statement)
         (m_value_statement expr state)
         (m_value_expression expr state))))
 
