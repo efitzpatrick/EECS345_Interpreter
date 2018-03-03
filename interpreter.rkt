@@ -116,7 +116,7 @@
 (define m_state_statement
   (lambda (stmt state)
     (cond
-      ((eq? 'if (car stmt)) (m_state_if stmt state))
+      ((eq? 'if (car stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
       ((and (eq? 'var (car stmt))
             (pair? (cdr stmt)))
             (m_state_declare_assign (cadr stmt) (caddr stmt) state))
@@ -143,19 +143,23 @@
 
 ; if statements
 
+(define cond1 cadr)
+(define then-stmt caddr)
+(define else-stmt cadddr)
 
 ;If statement
 ; parameters: condition, then statment, else statement, and state
 ;if, then, and else statements
 (define m_state_if
-  (lambda (cond1 then-stmt else-stmt state)
-    (if (m_bool cond1 state) (m_state then-stmt state))
-    (else (m_state else-stmt state))))
+  (lambda (cond1 then-stmt state)
+    (if (m_boolean cond1 state)
+        (m_state then-stmt state)
+        (error "you fucked up"))));(m_state else-stmt state)))))
 
 ; A simple if then statement
-(define m_state_if
-  (lambda (cond1 then-stmt state)
-    (if (m_bool cond1) (m_state then-stmt state))))
+; (define m_state_if
+;  (lambda (cond1 then-stmt state)
+;    (if (m_bool cond1) (m_state then-stmt state))))
 
 
 ; while statment
@@ -208,12 +212,12 @@
       ((eq? op '*) *)
       ((eq? op '/) quotient)
       ((eq? op '%) remainder)
-      ((eq? '<) <)
-      ((eq? '>) >)
-      ((eq? '<=) <=)
-      ((eq? '>=) >=)
-      ((eq? '==) =)
-      ((eq? '!=) !=)
+      ((eq? op '<) <)
+      ((eq? op '>) >)
+      ((eq? op '<=) <=)
+      ((eq? op '>=) >=)
+      ((eq? op '==) =)
+      ((eq? op '!=) !=)
       ((eq? op '&&) (lambda (x y) (and x y)))
       ((eq? op '||) (lambda (x y) (or x y))))))
 

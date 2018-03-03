@@ -1,2 +1,3 @@
 var x = 5;
-return x;
+if (x == 5)
+return 2;
