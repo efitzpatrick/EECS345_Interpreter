@@ -13,7 +13,7 @@
 (define interpret_parsetree
   (lambda (parsetree state)
     (if (null? parsetree)
-        (if (state_member? 'return state)
+        (if (eq? 'return (state_var1 state))
             (state_lookup 'return state)
             (error "no return statement."))
         (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
@@ -108,16 +108,17 @@
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
 (define m_state
   (lambda (expr state)
-    (cond
-      ((list? expr) (m_value_list expr state))
-      (else (m_value_atom expr state)))))
+    (m_state_statement expr state)))
+;    (cond
+ ;     ((list? expr) (m_value_list expr state))
+  ;    (else (m_value_atom expr state)))))
       
 (define m_state_statement
   (lambda (stmt state)
     (cond
       ((eq? 'if (car stmt)) (m_state_if stmt state))
-      ((eq? 'var (car stmt)) (m_state_declare stmt state))
-      ((eq? '= (car stmt)) ((m_state_assign stmt state)))
+      ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
+      ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
       ((eq? 'return (car stmt)) (toAtoms (state_add 'return (m_value (cadr stmt) state) (state_remove 'return state))))
       ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
       
@@ -175,20 +176,19 @@
 ; parameters: the word var (if it is a declaration), variable
 (define m_state_declare_assign
   (lambda (decl_stmt var_name value state)
-    (state_add var_name value state)))))
+    (state_add var_name value state)))
 
 (define m_state_declare
-  (lambda (decl_stmt var_name state)
-    (state_add decl_stmt null state)))
+  (lambda (var_name state)
+    (state_add var_name 'undef state)))
 ; This handles the situation x = 1;
 ;assigns a variable a value
 ; parameter: 
 (define m_state_assign
-  (lambda (var_name op value state)
-    (if (eq? '= op)
-        (if (state_member? var_name state)
-            (state_add var_name value (state_remove var_name state)) ;if the variable is in the state, declare the variable
-            (error("Variable not declared")))))) ;What do I do with this? 
+  (lambda (var_name value state)
+    (if (state_member? var_name state)
+        (state_add var_name value (state_remove var_name state)) ;if the variable is in the state, declare the variable
+        (error("Variable not declared")))))
         
         
 ; Taylor Smith tps45
