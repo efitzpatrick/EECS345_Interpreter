@@ -67,7 +67,7 @@
 ; returns true iff the state is empty
 (define state_null?
   (lambda (state)
-    (if (eq? 'null (vars state))  ; if there are no vriables in the state, then the state is empty
+    (if (eq? '() (vars state))  ; if there are no vriables in the state, then the state is empty
         #t
         #f)))     ; otherwise, the state is not null, so it returns false
 
@@ -194,8 +194,8 @@
 (define m_state_assign
   (lambda (var_name value state)
     (if (state_member? var_name state)
-        (state_add var_name value (state_remove var_name state)) ;if the variable is in the state, declare the variable
-        (error("Variable not declared")))))
+        (state_add var_name (m_value value state) (state_remove var_name state)) ;if the variable is in the state, declare the variable
+        (error "Variable not declared"))))
         
         
 ; Taylor Smith tps45
