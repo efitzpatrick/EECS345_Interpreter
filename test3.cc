@@ -1,3 +1,2 @@
-var x;
-x = 5;
+var x = 5;
 return x;

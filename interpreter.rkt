@@ -117,8 +117,11 @@
   (lambda (stmt state)
     (cond
       ((eq? 'if (car stmt)) (m_state_if stmt state))
-      ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
+      ((and (eq? 'var (car stmt))
+            (pair? (cdr stmt)))
+            (m_state_declare_assign (cadr stmt) (caddr stmt) state))
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
+      ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
       ((eq? 'return (car stmt)) (toAtoms (state_add 'return (m_value (cadr stmt) state) (state_remove 'return state))))
       ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
       
@@ -175,7 +178,7 @@
 ; adds the variable 'var' to the vars list with a value of null
 ; parameters: the word var (if it is a declaration), variable
 (define m_state_declare_assign
-  (lambda (decl_stmt var_name value state)
+  (lambda (var_name value state)
     (state_add var_name value state)))
 
 (define m_state_declare
