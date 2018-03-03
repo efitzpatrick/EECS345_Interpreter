@@ -12,11 +12,11 @@
 
 (define interpret_parsetree
   (lambda (parsetree state)
-      (if (null? parsetree)
-          (if (state_member? "return" state)
-              (state_lookup "return" state)
-              "no return statement.")
-          (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
+    (if (null? parsetree)
+        (if (state_member? 'return state)
+            (state_lookup 'return state)
+            "no return statement.")
+        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
 
 
 (define interpret
@@ -92,16 +92,16 @@
 (define m_value
   (lambda (expr state)
     (cond
-      ((atom? expr) m_value_atom expr state)
-      (else m_value_list expr state))))
+      ((atom? expr) (m_value_atom expr state))
+      (else (m_value_list expr state)))))
 
 ; m_boolean takes an expression and a state and returns the value of the expression
 ; (note: we handle booleans in the m_value functions, so that is why m_boolean and m_value are the same) 
 (define m_boolean
   (lambda (expr state)
     (cond
-      ((atom? expr) m_value_atom expr state)
-      (else m_value_list expr state))))
+      ((atom? expr) (m_value_atom expr state))
+      (else (m_value_list expr state)))))
 
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
 (define m_state
@@ -116,7 +116,7 @@
       ((eq? 'if (car stmt)) (m_state_if stmt state))
       ((eq? 'var (car stmt)) (m_state_declare stmt state))
       ((eq? '= (car stmt)) ((m_state_assign stmt state)))
-      ((eq? 'return (car stmt)) (toAtoms (state_add "return value" (m_value (cadr stmt) state) (state_remove "return value" state))))
+      ((eq? 'return (car stmt)) (toAtoms (state_add 'return (m_value (cadr stmt) state) (state_remove 'return state))))
       ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
       
 (define toAtoms
@@ -133,48 +133,55 @@
 ; if statements
 
 
-;3 variable (if, then-stmt, else-stmt)and state
+;If statement
+; parameters: condition, then statment, else statement, and state
+if, then, and else statements
 (define m_state_if
-  (lambda (expression state)
-    (if (m_bool((cadr expression) state) m_state((caddr lis) state))
-    ( m_state((cadddr lis) state)))))
+  (lambda (cond1 then-stmt else-stmt state)
+    (if (m_bool cond1 state) (m_state then-stmt state))
+    (else (m_state else-stmt state))))
 
-;2 variable (if, then-stmt)
+; A simple if then statement
 (define m_state_if
-  (lambda (expression state)
-    (if (m_bool(cadr expression)) m_state((caddr lis) state))))
+  (lambda (cond1 then-stmt state)
+    (if (m_bool cond1) (m_state then-stmt state))))
 
-; while statments
-; i need to use the tail end recursion, I know I did not implement this correctly
+; I believe this function is incorrect
+; while statment
+; parameters: while condition, loop body, state
 (define m_state_while
-  (lambda (expression state)
-    (if (m_bool((cadr expression) state))
-        (m_state(while_stmt(expression m_state(then_stmt state))))
-        (mstate(cond1 state)))))
+  (lambda (cond1 body state)
+    (if (m_bool cond1 state))
+    (m_state (while_stmt cond1 body (m_state then_stmt state)))
+    (mstate cond1 state)))
 
 ; return statement
+; paramteters: what you want to return
 (define m_state_return
   (lambda (x)
     (if (state_member? x state)
-        (m_statelookup(x state)) ;if it is a variable, return the variable
-        (m_value_math(x))))) ;if it is an expression, return the value of the expression
+        (m_statelookup x state)) ;if it is a variable, return the variable
+    (m_value_math(x))))) ;if it is an expression, return the value of the expression
 
+; This needs fixing because how do I deal with the potential for var x; and var x = 1;  without the expression list
 ; adds the variable 'var' to the vars list with a value of null
-; if expression has a len of 2
+; parameters: the word var (if it is a declaration), variable
 (define m_state_declare
   (lambda (expression state)
-      (if (eq? 'var (car expression))
-          (if (eq? '= (caddr expression))
-              (state_add (cadr expression) (cdddr expression) state) ;if a declaration and assignment, declare and assign the value
-              (state_add((cadr expression) null state)))))) ;otherwise, just declare the values with a null as the value
+    (if (eq? 'var (car expression))
+        (if (eq? '= (caddr expression))
+            (state_add (cadr expression) (cdddr expression) state) ;if a declaration and assignment, declare and assign the value
+            (state_add (cadr expression) null state))))) ;otherwise, just declare the values with a null as the value
            
-;if the expression has a len of 3
+; This handles the situation x = 1;
+;assigns a variable a value
+; parameter: 
 (define m_state_assign
-  (lambda (expression state)
-    (if (eq? '= (cadr expression))
-        (if (state_member? (car expression) state)
-            (state_add (car expression) (cddr expression) (state_remove (car expression) state)) ;if the variable is in the state, declare the variable
-            (error("Variable not declared"))))))
+  (lambda (var_name op value state)
+    (if (eq? '= op)
+        (if (state_member? var_name state)
+            (state_add var_name value (state_remove var_name state)) ;if the variable is in the state, declare the variable
+            (error("Variable not declared")))))) ;What do I do with this? 
         
         
 ; Taylor Smith tps45
