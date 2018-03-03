@@ -243,6 +243,14 @@
         (m_value_statement expr state)
         (m_value_expression expr state))))
 
+;member? returns true or false depending on if x is in the lis
+; parameters: atom to find, lis to look in
+(define member?
+  (lambda (x lis)
+    (if (null? lis) #f
+        (if (equal? x (car lis)) #t
+            (member? x (cdr lis))))))
+
 ; returns a value for part of the parse tree that is an atom
 (define m_value_atom
   (lambda (expr state)
