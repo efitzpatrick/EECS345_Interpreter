@@ -1,5 +1,5 @@
 ; Giuliana Conte gdc24
-; Ellie Fitzpatrick eef33
+; Ellie Fitzpatrick eef33@case.edu
 ; Taylor Smith tps45
 
 (require "simpleParser.scm")                                                                                  ; load parser
