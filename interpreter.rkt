@@ -163,7 +163,8 @@
 (define m_state_if
   (lambda (cond1 then-stmt state)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state))))
+        (m_state then-stmt state)
+        state)))
 
 
 ; while statment
