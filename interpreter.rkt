@@ -118,7 +118,7 @@
     (cond
       ((eq? 'if (car stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
       ((and (eq? 'var (car stmt))
-            (pair? (cdr stmt)))
+            (not (eq? (cddr stmt) '())))
             (m_state_declare_assign (cadr stmt) (caddr stmt) state))
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
       ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
@@ -183,13 +183,15 @@
 ; parameters: the word var (if it is a declaration), variable
 (define m_state_declare_assign
   (lambda (var_name value state)
-    (state_add var_name value state)))
+    (state_add var_name (m_value value state) state)))
 
 (define m_state_declare
   (lambda (var_name state)
     (state_add var_name 'undef state)))
+
+
 ; This handles the situation x = 1;
-;assigns a variable a value
+; assigns a variable a value
 ; parameter: 
 (define m_state_assign
   (lambda (var_name value state)
@@ -235,7 +237,7 @@
 (define m_value_expression
   (lambda (expr state)
     (if (eq? 3 (length expr))
-        ((binary-ops (operator expr))(m_value (operand1 expr) state) (m_value (operand2 expr) state))
+        ((binary-ops (operator expr)) (m_value (operand1 expr) state) (m_value (operand2 expr) state))
         ((unary-ops (operator expr) (m_value (operand1 expr) state))))))
         
 ; returns value of an assignment statement

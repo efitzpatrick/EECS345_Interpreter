@@ -1,0 +1,7 @@
+(define tests
+  (lambda ()
+    (cond
+      ((eq? (interpret "test1.txt") 150) #t)
+      ((eq? (interpret "test2.txt") -4) #t)
+      ((eq? (interpret "test3.txt") 10) #t)
+      (else #f))))
