@@ -125,7 +125,7 @@
        (m_state_declare_assign (cadr stmt) (caddr stmt) state))
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
       ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
-      ((eq? 'return (car stmt)) (toAtoms (state_add 'return (m_value (cadr stmt) state) (state_remove 'return state))))
+      ((eq? 'return (car stmt)) (toAtoms (state_add 'return (return_helper (m_value (cadr stmt) state)) (state_remove 'return state))))
       ((eq? 'while (car stmt)) (m_state_while stmt state)))))      
       
 (define toAtoms
@@ -261,6 +261,14 @@
     (if (member? (car expr) statement)
         (m_value_statement expr state)
         (m_value_expression expr state))))
+
+; changes #t and #f to true and false
+(define return_helper
+  (lambda (expr)
+    (cond
+      ((eq? expr #t) 'true)
+      ((eq? expr #f) 'false)
+      (else expr))))
 
 ;member? returns true or false depending on if x is in the lis
 ; parameters: atom to find, lis to look in
