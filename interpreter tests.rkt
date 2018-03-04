@@ -13,6 +13,9 @@
              (eq? (interpret "test9.txt") 5)
              (eq? (interpret "test10.txt") -39)
              (eq? (interpret "test15.txt") 'true)
-             (eq? (interpret "test16.txt") '100))
+             (eq? (interpret "test16.txt") '100)
+             (eq? (interpret "test17.txt") 'false)
+             (eq? (interpret "test18.txt") 'true)
+             (eq? (interpret "test19.txt") 128))
         #t
         #f)))
