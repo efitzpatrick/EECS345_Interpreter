@@ -116,10 +116,13 @@
 (define m_state_statement
   (lambda (stmt state)
     (cond
+      ((and (eq? 'if (car stmt))
+            (not (eq? (cdddr stmt) '())))
+       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state))
       ((eq? 'if (car stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
       ((and (eq? 'var (car stmt))
             (not (eq? (cddr stmt) '())))
-            (m_state_declare_assign (cadr stmt) (caddr stmt) state))
+       (m_state_declare_assign (cadr stmt) (caddr stmt) state))
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
       ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
       ((eq? 'return (car stmt)) (toAtoms (state_add 'return (m_value (cadr stmt) state) (state_remove 'return state))))
@@ -149,17 +152,18 @@
 
 ;If statement
 ; parameters: condition, then statment, else statement, and state
-;if, then, and else statements
+; if, then, and else statements
+(define m_state_if_else
+  (lambda (cond1 then-stmt else-stmt state)
+    (if (m_boolean cond1 state)
+        (m_state then-stmt state)
+        (m_state else-stmt state))))
+
+; A simple if then statement
 (define m_state_if
   (lambda (cond1 then-stmt state)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state)
-        (error "you fucked up"))));(m_state else-stmt state)))))
-
-; A simple if then statement
-; (define m_state_if
-;  (lambda (cond1 then-stmt state)
-;    (if (m_bool cond1) (m_state then-stmt state))))
+        (m_state then-stmt state))))
 
 
 ; while statment
