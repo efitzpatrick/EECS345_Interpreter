@@ -243,7 +243,7 @@
   (lambda (expr state)
     (if (eq? 3 (length expr))
         ((binary-ops (operator expr)) (m_value (operand1 expr) state) (m_value (operand2 expr) state))
-        ((unary-ops (operator expr) (m_value (operand1 expr) state))))))
+        ((unary-ops (operator expr)) (m_value (operand1 expr) state)))))
         
 ; returns value of an assignment statement
 (define m_value_statement
