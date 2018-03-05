@@ -167,12 +167,13 @@
         state)))
 
 
-; while statment
+; while statement
 ; parameters: while condition, loop body, state
 (define m_state_while
   (lambda (cond1 body state)
     (if (m_boolean cond1 state)
-        (m_state (m_value body state) (m_state_while cond1 body (m_state body state)))
+        (m_state_while cond1 body (m_state body state))
+ ;       (m_state (m_value body state) (m_state_while cond1 body (m_state body state)))
         state)))
 
 ; return statement
