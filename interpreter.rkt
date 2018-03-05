@@ -128,7 +128,7 @@
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
       ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
       ((eq? 'return (car stmt)) (toAtoms (state_add 'return (return_helper (m_value (cadr stmt) state)) (state_remove 'return state))))
-      ((eq? 'while (car stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state)))))      
+      ((eq? 'while (car stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))      
       
 (define toAtoms
   (lambda (x)
@@ -172,9 +172,9 @@
 ; while statement
 ; parameters: while condition, loop body, state
 (define m_state_while
-  (lambda (cond1 body state)
+  (lambda (cond1 body state return)
     (if (m_boolean cond1 state)
-        (m_state_while cond1 body (m_state body state))
+        (m_state_while cond1 body (m_state body state) return)
  ;       (m_state (m_value body state) (m_state_while cond1 body (m_state body state)))
         state)))
 
