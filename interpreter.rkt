@@ -199,21 +199,22 @@
         (m_statelookup x state) ;if it is a variable, return the variable
         (m_value_math(x))))) ;if it is an expression, return the value of the expression
 
-; This needs fixing because how do I deal with the potential for var x; and var x = 1;  without the expression list
-; adds the variable 'var' to the vars list with a value of null
-; parameters: the word var (if it is a declaration), variable
+; mstate declare assign is for the situation "var x = 1;". This will creates a variable and assigns it a value at the same time.
+; parameters: the variable and the value
 (define m_state_declare_assign
   (lambda (var_name value state)
     (state_add var_name (m_value value state) state)))
 
+; mstate declare is for the situation "var x;". This  function creates a variable, but assigns it the value 'undef
+; parameters: the variable
 (define m_state_declare
   (lambda (var_name state)
     (state_add var_name 'undef state)))
 
 
-; This handles the situation x = 1;
-; assigns a variable a value
-; parameter: 
+; mstate assign is for the situation "x = 1;" This function removes the variable from the state and then adds it back
+    ; to the state with the variable name and the value
+; parameter: variable and the value
 (define m_state_assign
   (lambda (var_name value state)
     (if (state_member? var_name state)
