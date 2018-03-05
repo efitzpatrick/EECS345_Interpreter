@@ -1,5 +1,5 @@
 ; Giuliana Conte gdc24
-; Ellie Fitzpatrick eef33@case.edu
+; Ellie Fitzpatrick eef33
 ; Taylor Smith tps45
 
 (require "simpleParser.scm") ; load parser
@@ -18,7 +18,6 @@
             (error "no return statement."))
         (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
 
-
 (define interpret
   (lambda (filename)
     (interpret_parsetree (parser filename) (state_new))))
@@ -31,6 +30,9 @@
 (define state_val1 caadr)   ; first value in the state
 (define empty_vars (list))  ; empty list of variables
 (define empty_vals (list))  ; empty list of values
+(define list_of_vals cadr)  ; list of the values
+(define var_cdrs cdar)      ; all varables except the first
+(define val_cdrs cdadr)     ; all values except the first
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; interacting with the state functions. implemented in two lists:                                                   ;
@@ -46,7 +48,7 @@
 ; parameters: a variable, a value, and a state
 (define state_add
   (lambda (var val state)
-    (list (cons var (vars state)) (cons val (cadr state)))))
+    (list (cons var (vars state)) (cons val (list_of_vals state)))))
 
 ; remove a binding from the state
 (define state_remove
@@ -82,7 +84,7 @@
 ; returns the state without the first binding
 (define state_cdrs
   (lambda (state)
-    (list (cdar state) (cdadr state))))                                                                       ; returns two lists within a list, each one without their first element
+    (list (var_cdrs state) (val_cdrs state)))) ; returns two lists within a list, each one without their first element
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
