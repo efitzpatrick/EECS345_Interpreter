@@ -51,6 +51,7 @@
     (list (cons var (vars state)) (cons val (list_of_vals state)))))
 
 ; remove a binding from the state
+; parameters: variable and state
 (define state_remove
   (lambda (var state)
     (cond
@@ -59,32 +60,36 @@
       (else (state_add (state_var1 state) (state_val1 state) (state_remove var (state_cdrs state)))))))
 
 ; returns true iff variable is in the state
+; parameters: variable and state
 (define state_member?
   (lambda (var state)
     (cond
-      ((state_null? state) #f) ; if the state is empty, the variable is not in the state, so return #f
-      ((eq? var (state_var1 state)) #t) ; if the var equals the first var in the state, return #t
-      (else (state_member? var (state_cdrs state)))))) ; otherwise, perform the function on the state without the first binding
+      ((state_null? state) #f)
+      ((eq? var (state_var1 state)) #t)
+      (else (state_member? var (state_cdrs state))))))
       
 ; returns true iff the state is empty
+; parameters: a state
 (define state_null?
   (lambda (state)
     (if (eq? '() (vars state))  ; if there are no vriables in the state, then the state is empty
         #t
         #f)))     ; otherwise, the state is not null, so it returns false
 
-; finds the value for the given variable
+; returns the value of the given variable
+; parameters: a variable an the state
 (define state_lookup
   (lambda (var state)
     (cond
-      ((state_null? state) (error "No such variable")) ; if the state is null, there is no variable with the name that is being looked up, so throw an error
-      ((eq? var (state_var1 state)) (state_val1 state)) ; check if the variable is the same as the state
-      (else (state_lookup var (state_cdrs state)))))) ; otherwise, performs the lookup on the rest of the state
+      ((state_null? state) (error "No such variable"))
+      ((eq? var (state_var1 state)) (state_val1 state))
+      (else (state_lookup var (state_cdrs state))))))
 
 ; returns the state without the first binding
+; parameters: a state
 (define state_cdrs
   (lambda (state)
-    (list (var_cdrs state) (val_cdrs state)))) ; returns two lists within a list, each one without their first element
+    (list (var_cdrs state) (val_cdrs state))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -93,6 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; m_value takes an expression and a state and returns the value of the expression
+; parameters: takes an expression and a state
 (define m_value
   (lambda (expr state)
     (cond
@@ -100,7 +106,8 @@
       (else (m_value_list expr state)))))
 
 ; m_boolean takes an expression and a state and returns the value of the expression
-; (note: we handle booleans in the m_value functions, so that is why m_boolean and m_value are the same) 
+; parameters: an expression and a state
+; (note: we handle booleans in the m_value functions, so that is why m_boolean and m_value are the same)
 (define m_boolean
   (lambda (expr state)
     (cond
@@ -108,21 +115,27 @@
       (else (m_value_list expr state)))))
 
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
+; parameters: expression
 (define m_state
   (lambda (expr state)
     (m_state_statement expr state)))
 ;    (cond
  ;     ((list? expr) (m_value_list expr state))
   ;    (else (m_value_atom expr state)))))
+
+(define stmt_type car) ; statement type, i.e. if, while, etc
+(define empty_when_no_else cdddr) ; if the if statement has no else block, this will be an empty list
+(define empty_when_only_assigning cddr) ; if the statement is only assigning and not declaring, this will be an empty list
+
       
 (define m_state_statement
   (lambda (stmt state)
     (cond
-      ((and (eq? 'if (car stmt))
-            (not (eq? (cdddr stmt) '())))
+      ((and (eq? 'if (stmt_type stmt))
+            (not (eq? (empty_when_no_else stmt) '())))
        (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state))
-      ((eq? 'if (car stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
-      ((and (eq? 'var (car stmt))
+      ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
+      ((and (eq? 'var (stmt_type stmt))
             (not (eq? (cddr stmt) '())))
        (m_state_declare_assign (cadr stmt) (caddr stmt) state))
       ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
