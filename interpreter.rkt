@@ -101,18 +101,18 @@
 ; parameters: takes an expression and a state
 (define m_value
   (lambda (expr state)
-    (cond
-      ((atom? expr) (m_value_atom expr state))
-      (else (m_value_list expr state)))))
+    (if (atom? expr)
+        (m_value_atom expr state)
+        (m_value_list expr state))))
 
 ; m_boolean takes an expression and a state and returns the value of the expression
 ; parameters: an expression and a state
 ; (note: we handle booleans in the m_value functions, so that is why m_boolean and m_value are the same)
 (define m_boolean
   (lambda (expr state)
-    (cond
-      ((atom? expr) (m_value_atom expr state))
-      (else (m_value_list expr state)))))
+    (if (atom? expr)
+        (m_value_atom expr state)
+        (m_value_list expr state))))
 
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
 ; parameters: expression
@@ -126,7 +126,8 @@
 (define stmt_type car) ; statement type, i.e. if, while, etc
 (define empty_when_no_else cdddr) ; if the if statement has no else block, this will be an empty list
 (define empty_when_only_assigning cddr) ; if the statement is only assigning and not declaring, this will be an empty list
-
+(define declared_var cadr)
+(define assigned_val caddr)
       
 (define m_state_statement
   (lambda (stmt state)
@@ -136,12 +137,12 @@
        (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state))
       ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
       ((and (eq? 'var (stmt_type stmt))
-            (not (eq? (cddr stmt) '())))
-       (m_state_declare_assign (cadr stmt) (caddr stmt) state))
-      ((eq? '= (car stmt)) (m_state_assign (cadr stmt) (caddr stmt) state))
-      ((eq? 'var (car stmt)) (m_state_declare (cadr stmt) state))
-      ((eq? 'return (car stmt)) (toAtoms (state_add 'return (return_helper (m_value (cadr stmt) state)) (state_remove 'return state))))
-      ((eq? 'while (car stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))      
+            (not (eq? (empty_when_only_assigning stmt) '())))
+       (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state))
+      ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state))
+      ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
+      ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) (state_remove 'return state))))
+      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))      
       
 (define toAtoms
   (lambda (x)
@@ -261,12 +262,13 @@
     (if (eq? 3 (length expr))
         ((binary-ops (operator expr)) (m_value (operand1 expr) state) (m_value (operand2 expr) state))
         ((unary-ops (operator expr)) (m_value (operand1 expr) state)))))
-        
+
+
 ; returns value of an assignment statement
 (define m_value_statement
   (lambda (expr state)
-    (if (or (eq? (car expr) '=) (eq? (car expr) 'var))
-        (m_value (caddr expr) state)
+    (if (or (eq? (stmt_type expr) '=) (eq? (stmt_type expr) 'var))
+        (m_value (assigned_val expr) state)
         #f)))
 
 ; defines an operator that is a statement
@@ -275,7 +277,7 @@
 ; returns a value for part of the parse tree that is a list
 (define m_value_list
   (lambda (expr state)
-    (if (member? (car expr) statement)
+    (if (member? (stmt_type expr) statement)
         (m_value_statement expr state)
         (m_value_expression expr state))))
 
@@ -287,7 +289,7 @@
       ((eq? expr #f) 'false)
       (else expr))))
 
-;member? returns true or false depending on if x is in the lis
+; member? returns true or false depending on if x is in the lis
 ; parameters: atom to find, lis to look in
 (define member?
   (lambda (x lis)
