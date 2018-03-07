@@ -13,7 +13,7 @@
 (define interpret_parsetree
   (lambda (parsetree state)
     (if (null? parsetree)
-        (if (eq? 'return (state_var1 state))
+        (if (eq? 'return (var1 state))
             (state_lookup 'return state)
             (error "no return statement."))
         (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
@@ -26,8 +26,8 @@
 ; defining commonly used words for abstraction
 (define vars car)           ; list of variables in the state
 (define vals cdr)           ; list of values in the state
-(define state_var1 caar)    ; first variable in the state
-(define state_val1 caadr)   ; first value in the state
+(define var1 caar)    ; first variable in the state
+(define val1 caadr)   ; first value in the state
 (define empty_vars (list))  ; empty list of variables
 (define empty_vals (list))  ; empty list of values
 (define list_of_vals cadr)  ; list of the values
@@ -42,7 +42,7 @@
 ; state_new creates an empty state
 ; parameters: none
 (define state_new
-  (lambda () (list empty_vars empty_vals)))
+  (lambda () (new_layer)))
 
 ; add a binding to the state
 ; parameters: a variable, a value, and a state
@@ -56,8 +56,8 @@
   (lambda (var state)
     (cond
       ((null? (vars state)) state)
-      ((eq? var (state_var1 state)) (state_cdrs state))
-      (else (state_add (state_var1 state) (state_val1 state) (state_remove var (state_cdrs state)))))))
+      ((eq? var (var1 state)) (state_cdrs state))
+      (else (state_add (var1 state) (val1 state) (state_remove var (state_cdrs state)))))))
 
 ; returns true iff variable is in the state
 ; parameters: variable and state
@@ -65,7 +65,7 @@
   (lambda (var state)
     (cond
       ((state_null? state) #f)
-      ((eq? var (state_var1 state)) #t)
+      ((eq? var (var1 state)) #t)
       (else (state_member? var (state_cdrs state))))))
       
 ; returns true iff the state is empty
@@ -77,12 +77,12 @@
         #f)))     ; otherwise, the state is not null, so it returns false
 
 ; returns the value of the given variable
-; parameters: a variable an the state
+; parameters: a variable and the state
 (define state_lookup
   (lambda (var state)
     (cond
       ((state_null? state) (error "No such variable"))
-      ((eq? var (state_var1 state)) (state_val1 state))
+      ((eq? var (var1 state)) (val1 state))
       (else (state_lookup var (state_cdrs state))))))
 
 ; returns the state without the first binding
@@ -91,6 +91,60 @@
   (lambda (state)
     (list (var_cdrs state) (val_cdrs state))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Layer functions                                                       ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; returns a new layer
+; parameters: none
+(define new_layer
+  (lambda ()
+    (list empty_vars empty_vals)))
+
+; returns true iff there are no variables stored in the layer
+; parameters: a layer
+(define layer_empty?
+  (lambda (layer)
+    (null? (car layer))))
+
+; add a binding to the layer
+; parameters: a variable, a value, and a layer
+(define add_to_layer
+  (lambda (var val layer)
+    (list (cons var (vars layer)) (cons val (list_of_vals layer)))))
+
+; remove a binding from a layer
+; parameters: a variable and a layer
+(define remove_from_layer
+  (lambda (var layer)
+    (cond
+      ((null? (vars layer)) layer)
+      ((eq? var (var1 layer)) (layer_cdrs layer))
+      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
+
+; returns the layer without the first binding
+; parameters: a layer
+(define layer_cdrs
+  (lambda (layer)
+    (list (var_cdrs layer) (val_cdrs layer))))
+
+; returns the value of the given variable
+; parameters: a variable and a layer
+(define layer_lookup
+  (lambda (var layer)
+    (cond
+      ((layer_empty? layer) (error "No such variable"))
+      ((eq? var (var1 layer)) (val1 layer))
+      (else (layer_lookup var (layer_cdrs layer))))))
+
+; returns true iff variable is in the layer
+; parameters: a variable and a layer
+(define layer_member?
+  (lambda (var layer)
+    (cond
+      ((layer_empty? layer) #f)
+      ((eq? var (var1 layer)) #t)
+      (else (layer_member? var (layer_cdrs layer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; m_state, m_value, and m_boolean functions to return the values from the parse tree                                ;
