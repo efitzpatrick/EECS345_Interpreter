@@ -73,7 +73,7 @@
     (cond
       ((state_null? state) (error "Variable not found"))
       ((layer_member? var (first_layer state))
-       (remove_from_layer var first_layer))
+       (remove_from_layer var (first_layer state)))
       (else (state_remove var (rest_of_layers state))))))
 
 (define remove_from_layer
