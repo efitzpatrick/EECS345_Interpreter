@@ -22,12 +22,11 @@
   (lambda (filename)
     (interpret_parsetree (parser filename) (state_new))))
 
-    
 ; defining commonly used words for abstraction
 (define vars car)           ; list of variables in the state
 (define vals cdr)           ; list of values in the state
-(define var1 caar)    ; first variable in the state
-(define val1 caadr)   ; first value in the state
+(define var1 caar)          ; first variable in the state
+(define val1 caadr)         ; first value in the state
 (define empty_vars (list))  ; empty list of variables
 (define empty_vals (list))  ; empty list of values
 (define list_of_vals cadr)  ; list of the values
@@ -61,12 +60,28 @@
         (error "No layers to remove")
         (cdr state))))
 
-
 ; add a binding to the top layer of the state
 ; parameters: a variable, a value, and a staet
 (define state_add
   (lambda (var val state)
     (cons (add_to_layer var val (first_layer state)) (rest_of_layers state))))
+
+; remove a binding from a layer
+; parameters: a variable and a layer
+(define state_remove
+  (lambda (var state)
+    (cond
+      ((state_null? state) (error "Variable not found"))
+      ((layer_member? var (first_layer state))
+       (remove_from_layer var first_layer))
+      (else (state_remove var (rest_of_layers state))))))
+
+(define remove_from_layer
+  (lambda (var layer)
+    (cond
+      ((null? (vars layer)) layer)
+      ((eq? var (var1 layer)) (layer_cdrs layer))
+      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
 ; returns true iff variable is in the state
 ; parameters: variable and state
@@ -74,16 +89,17 @@
   (lambda (var state)
     (cond
       ((state_null? state) #f)
-      ((eq? var (var1 state)) #t)
-      (else (state_member? var (state_cdrs state))))))
+      ((eq? 'no_such_var (layer_lookup var (first_layer state)))
+       (state_member? var (rest_of_layers state)))
+      (else #t))))
       
 ; returns true iff the state is empty
 ; parameters: a state
 (define state_null?
   (lambda (state)
-    (if (null? state)  ; if there are no variables in the state, then the state is empty
+    (if (null? state)
         #t
-        #f)))     ; otherwise, the state is not null, so it returns false
+        #f)))
 
 ; returns the value of the given variable
 ; parameters: a variable and the state
@@ -91,9 +107,12 @@
   (lambda (var state)
     (cond
       ((state_null? state) (error "No such variable"))
-      ((eq? 'no_such_var (layer_lookup var (first_layer state)))
-       (state_lookup var (rest_of_layers state)))
-      (else (layer_lookup var (first_layer state))))))
+      ((layer_empty? (first_layer state)) (layer_lookup var (rest_of_layers state)))
+      ((eq? var (var1 (first_layer state)))
+       (layer_lookup var (first_layer state)))
+  ;    ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
+   ;    (state_lookup var (rest_of_layers state)))
+      (else (layer_lookup var (rest_of_layers state))))))
 
 ; returns the state without the first binding
 ; parameters: a state
