@@ -33,8 +33,7 @@
 (define val_cdrs cdadr)     ; all values except the first
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; interacting with the state functions. implemented in two lists:                                                   ;
-; first list is all the variable names and second list is all the values, since that will be easier for the future  ;
+; interacting with the state functions. implemented in two lists, now with layers!                                  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define first_layer car)
@@ -115,15 +114,9 @@
        (state_lookup var (rest_of_layers state)))
       (else (layer_lookup var (first_layer state))))))
 
-; returns the state without the first binding
-; parameters: a state
-;(define state_cdrs
-;  (lambda (state)
-;    (list (var_cdrs state) (val_cdrs state))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Layer functions                                                       ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; manipulating individual layers of the state                                                                       ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define first_layer_vars caar)
 (define first_layer_vals cadar)
@@ -180,8 +173,7 @@
       (else (layer_member? var (layer_cdrs layer))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; m_state, m_value, and m_boolean functions to return the values from the parse tree                                ;
-;                                                                                                                   ;
+; the main m_state, m_value, and m_boolean functions to return the values from the parse tree                       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; m_value takes an expression and a state and returns the value of the expression
@@ -207,13 +199,23 @@
   (lambda (expr state)
     (m_state_statement expr state)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; M_state functions                                                                                                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 (define stmt_type car) ; statement type, i.e. if, while, etc
 (define empty_when_no_else cdddr) ; if the if statement has no else block, this will be an empty list
 (define empty_when_only_assigning cddr) ; if the statement is only assigning and not declaring, this will be an empty list
 (define declared_var cadr)
 (define assigned_val caddr)
 (define stmtlist cdr)
-
+(define first_stmt car)
+(define rest_of_stmts cdr)
+(define cond1 cadr)
+(define then-stmt caddr)
+(define else-stmt cadddr)
 
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
@@ -231,23 +233,7 @@
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
       ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
-      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v)))))) 
-
-; returns
-; parameters
-(define toAtoms
-  (lambda (x)
-    (cond
-      ((eq? #t x) 'true)
-      ((eq? #f x) 'false)
-      (else x))))
-
-; true iff the input is an atom
-; parameters: an input x
-(define atom?
-  (lambda (x)
-    (and (not (pair? x))
-       (not (null? x)))))
+      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))
 
 ; returns the updated state after executing a block of statements
 ; parameters: a block of code and a state
@@ -257,9 +243,6 @@
         state
         (remove_layer (m_state_stmtlist block (add_layer state))))))
 
-(define first_stmt car)
-(define rest_of_stmts cdr)
-
 ; returns the updated state after executing a list of statements
 ; parameters: a list of statements and a state
 (define m_state_stmtlist
@@ -267,16 +250,6 @@
     (if (null? stmtlist)
         state
         (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state)))))
-
-
-; Ellie Fitzpatrick
-; eef33
-
-
-; if statements
-(define cond1 cadr)
-(define then-stmt caddr)
-(define else-stmt cadddr)
 
 ; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
@@ -293,7 +266,6 @@
     (if (m_boolean cond1 state)
         (m_state then-stmt state)
         state)))
-
 
 ; returns the updated state after executing a while statement
 ; parameters: while condition, loop body, state, and return
@@ -332,7 +304,11 @@
         (state_update_val var_name (m_value value state) state)
         (error "Variable not declared"))))
 
-; Taylor Smith tps45
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Math operations                                                                                                   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define operator car)
 (define operand1 cadr)
 (define operand2 caddr)
@@ -370,6 +346,13 @@
       ((eq? op '!) not)
       ((eq? op '-) (lambda (x) (- 0 x))))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; M_value functions                                                                                                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define statement '(var = if return)) ; defines an operator that is a statement
+
 ; returns the value of an arithemtic expression whether the operator is unary or binary
 ; parameters: an expression and a state
 (define m_value_expression
@@ -377,7 +360,6 @@
     (if (eq? 3 (length expr))
         ((binary-ops (operator expr)) (m_value (operand1 expr) state) (m_value (operand2 expr) state))
         ((unary-ops (operator expr)) (m_value (operand1 expr) state)))))
-
 
 ; returns value of an assignment statement
 ; parameters: an expression and a state
@@ -387,9 +369,6 @@
         (m_value (assigned_val expr) state)
         #f)))
 
-; defines an operator that is a statement
-(define statement '(var = if return))
-
 ; returns a value for part of the parse tree that is a list
 ; parameters: an expression and a state
 (define m_value_list
@@ -397,6 +376,36 @@
     (if (member? (stmt_type expr) statement)
         (m_value_statement expr state)
         (m_value_expression expr state))))
+
+; returns a value for part of the parse tree that is an atom
+; parameters: an atom and a state
+(define m_value_atom
+  (lambda (atom state)
+    (cond
+      ((or (boolean? atom) (number? atom)) atom)
+      ((eq? atom 'true) #t)
+      ((eq? atom 'false) #f)
+      (else (state_lookup atom state)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Other functions/helpers                                                                                           ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; returns
+; parameters
+(define toAtoms
+  (lambda (x)
+    (cond
+      ((eq? #t x) 'true)
+      ((eq? #f x) 'false)
+      (else x))))
+
+; true iff the input is an atom
+; parameters: an input x
+(define atom?
+  (lambda (x)
+    (and (not (pair? x))
+       (not (null? x)))))
 
 ; changes #t and #f to true and false
 ; parameters: an expression
@@ -415,13 +424,3 @@
         (if (equal? x (car lis))
             #t
             (member? x (cdr lis))))))
-
-; returns a value for part of the parse tree that is an atom
-; parameters: an atom and a state
-(define m_value_atom
-  (lambda (atom state)
-    (cond
-      ((or (boolean? atom) (number? atom)) atom)
-      ((eq? atom 'true) #t)
-      ((eq? atom 'false) #f)
-      (else (state_lookup atom state)))))
