@@ -13,7 +13,7 @@
 (define interpret_parsetree
   (lambda (parsetree state)
     (if (null? parsetree)
-        (if (eq? 'return (var1 state))
+        (if (eq? 'return (var1 (first_layer state)))
             (state_lookup 'return state)
             (error "no return statement."))
         (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
@@ -79,8 +79,8 @@
 (define remove_from_layer
   (lambda (var layer)
     (cond
-      ((null? (vars layer)) layer)
-      ((eq? var (var1 layer)) (layer_cdrs layer))
+      ((null? (vars layer)) layer) ; if it's null, just return the layer
+      ((eq? var (var1 layer)) (list (layer_cdrs layer))) ; if it is the first variable, return the rest of the layer
       (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
 ; returns true iff variable is in the state
@@ -144,12 +144,12 @@
 
 ; remove a binding from a layer
 ; parameters: a variable and a layer
-(define remove_from_layer
-  (lambda (var layer)
-    (cond
-      ((null? (vars layer)) layer)
-      ((eq? var (var1 layer)) (layer_cdrs layer))
-      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
+;(define remove_from_layer
+;  (lambda (var layer)
+;    (cond
+;      ((null? (vars layer)) layer)
+;      ((eq? var (var1 layer)) (layer_cdrs layer))
+;      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
 ; returns the layer without the first binding
 ; parameters: a layer
@@ -224,7 +224,7 @@
        (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state))
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
-      ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) (state_remove 'return state))))
+      ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))      
       
 (define toAtoms
@@ -297,15 +297,14 @@
 
 
 ; mstate assign is for the situation "x = 1;" This function removes the variable from the state and then adds it back
-    ; to the state with the variable name and the value
+; to the state with the variable name and the value
 ; parameter: variable and the value
 (define m_state_assign
   (lambda (var_name value state)
     (if (state_member? var_name state)
         (state_add var_name (m_value value state) (state_remove var_name state)) ;if the variable is in the state, declare the variable
         (error "Variable not declared"))))
-        
-        
+
 ; Taylor Smith tps45
 
 (define operator car)
