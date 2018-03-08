@@ -15,7 +15,7 @@
         (if (eq? 'return (var1 (first_layer state)))
             (state_lookup 'return state)
             (error "no return statement."))
-        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return break continue) return))))
+        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return #f #f) return))))
 
 (define interpret
   (lambda (filename)
@@ -269,15 +269,15 @@
 (define m_state_if_else
   (lambda (cond1 then-stmt else-stmt state return break continue)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state)
-        (m_state else-stmt state))))
+        (m_state then-stmt state return break continue)
+        (m_state else-stmt state return break continue))))
 
 ; returns the updated state after executing an if statement without an else
 ; parameters: condition, then statment, and state
 (define m_state_if
   (lambda (cond1 then-stmt state return break continue)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state)
+        (m_state then-stmt state return break continue)
         state)))
 
 ; returns the updated state after executing a while statement
