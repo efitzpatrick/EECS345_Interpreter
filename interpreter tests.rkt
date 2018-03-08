@@ -30,7 +30,7 @@
 ;         (eq? (interpret "tests2/test09.txt") -1)
 ;         (eq? (interpret "tests2/test10.txt") 789)
 ;         (eq? (interpret "tests2/test14.txt") 12)
-         (eq? (interpret "tests2/test15.txt") 125)
+;         (eq? (interpret "tests2/test15.txt") 125)
 ;         (eq? (interpret "tests2/test16.txt") 110)
 ;         (eq? (interpret "tests2/test17.txt") 2000400)
 ;         (eq? (interpret "tests2/test18.txt") 101))
