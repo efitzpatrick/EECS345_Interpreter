@@ -15,7 +15,7 @@
         (if (eq? 'return (var1 (first_layer state)))
             (state_lookup 'return state)
             (error "no return statement."))
-        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return break continue) return))))
+        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return #f #f) return))))
 
 (define interpret
   (lambda (filename)
@@ -235,7 +235,7 @@
       ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state return break continue))
       ((and (eq? 'if (stmt_type stmt))
             (not (eq? (empty_when_no_else stmt) '())))
-      ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state return break continue))
+       ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state return break continue))
        (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state return break continue))
       ((and (eq? 'var (stmt_type stmt))
             (not (eq? (empty_when_only_assigning stmt) '())))
@@ -243,7 +243,8 @@
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state return break continue))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state return break continue))
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
-      ((eq? 'break (stmt_type stmt)) (break (return_helper (m_value (declared_var stmt) state))))
+      ((eq? 'break (stmt_type stmt)) (break state))
+      ((eq? 'continue (stmt_type stmt)) (continue state))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
 ;(m_state_return stmt state break continue return))
@@ -277,7 +278,7 @@
 (define m_state_if
   (lambda (cond1 then-stmt state return break continue)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state)
+        (m_state then-stmt state return break continue)
         state)))
 
 ; returns the updated state after executing a while statement
@@ -286,9 +287,11 @@
   (lambda (cond1 body state return break continue)
     (call/cc
      (lambda (break)
-       (if (m_boolean cond1 state)
-           (m_state_while cond1 body (m_state body state) return break continue)
-           state)))))
+       (call/cc
+        (lambda (continue)
+          (if (m_boolean cond1 state)
+              (m_state_while cond1 body (m_state body state return break continue) return break continue)
+              state)))))))
 
 
 ; returns the program's return value
