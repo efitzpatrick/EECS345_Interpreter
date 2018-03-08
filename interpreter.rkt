@@ -223,6 +223,7 @@
 (define cond1 cadr)
 (define then-stmt caddr)
 (define else-stmt cadddr)
+(define return_val cadr)
 
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
@@ -247,7 +248,7 @@
 ; returns the updated state after executing a block of statements
 ; parameters: a block of code and a state
 (define m_state_block
-  (lambda (block state)
+  (lambda (block state break continue return)
     (if (null? block)
         state
         (remove_layer (m_state_stmtlist block (add_layer state))))))
@@ -255,7 +256,7 @@
 ; returns the updated state after executing a list of statements
 ; parameters: a list of statements and a state
 (define m_state_stmtlist
-  (lambda (stmtlist state)
+  (lambda (stmtlist state break continue return)
     (if (null? stmtlist)
         state
         (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state)))))
@@ -263,7 +264,7 @@
 ; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
 (define m_state_if_else
-  (lambda (cond1 then-stmt else-stmt state)
+  (lambda (cond1 then-stmt else-stmt state break continue return)
     (if (m_boolean cond1 state)
         (m_state then-stmt state)
         (m_state else-stmt state))))
@@ -271,7 +272,7 @@
 ; returns the updated state after executing an if statement without an else
 ; parameters: condition, then statment, and state
 (define m_state_if
-  (lambda (cond1 then-stmt state)
+  (lambda (cond1 then-stmt state break continue return)
     (if (m_boolean cond1 state)
         (m_state then-stmt state)
         state)))
@@ -279,7 +280,7 @@
 ; returns the updated state after executing a while statement
 ; parameters: while condition, loop body, state, and return
 (define m_state_while
-  (lambda (cond1 body state return)
+  (lambda (cond1 body state break continue return)
     (if (m_boolean cond1 state)
         (m_state_while cond1 body (m_state body state) return)
  ;       (m_state (m_value body state) (m_state_while cond1 body (m_state body state)))
@@ -297,25 +298,25 @@
                       
 (define m_state_return
   (lambda (expr state break continue return)
-    (return (state_update_val 'return (m_value (cadr expr) state) (m_state (cadr expr) state break continue return)))))
+    (return (state_update_val 'return (m_value (return_val expr) state) (m_state (return_val expr) state break continue return)))))
     
 
 ; returns the updated state after executing a declare & assign statement
 ; parameters: the variable and the value
 (define m_state_declare_assign
-  (lambda (var_name value state)
+  (lambda (var_name value state break continue return)
     (state_add var_name (m_value value state) state)))
 
 ; returns the updated state after executing a declare statement
 ; parameters: the variable
 (define m_state_declare
-  (lambda (var_name state)
+  (lambda (var_name state break continue return)
     (state_add var_name 'undef state)))
 
 ; returns the updated state after executing an assignment statement
 ; parameter: variable and the value
 (define m_state_assign
-  (lambda (var_name value state)
+  (lambda (var_name value state break continue return)
     (if (state_member? var_name state)
         (state_update_val var_name (m_value value state) state)
         (error "Variable not declared"))))
