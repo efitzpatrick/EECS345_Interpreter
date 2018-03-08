@@ -73,14 +73,14 @@
     (cond
       ((state_null? state) (error "Variable not found"))
       ((layer_member? var (first_layer state))
-       (remove_from_layer var (first_layer state)))
+       (list (remove_from_layer var (first_layer state)) (rest_of_layers state)))
       (else (state_remove var (rest_of_layers state))))))
 
 (define remove_from_layer
   (lambda (var layer)
     (cond
       ((null? (vars layer)) layer) ; if it's null, just return the layer
-      ((eq? var (var1 layer)) (list (layer_cdrs layer))) ; if it is the first variable, return the rest of the layer
+      ((eq? var (var1 layer)) (layer_cdrs layer)) ; if it is the first variable, return the rest of the layer
       (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
 ; returns true iff variable is in the state
