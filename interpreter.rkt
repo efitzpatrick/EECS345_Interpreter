@@ -110,8 +110,10 @@
       ((layer_empty? (first_layer state)) (layer_lookup var (rest_of_layers state)))
       ((eq? var (var1 (first_layer state)))
        (layer_lookup var (first_layer state)))
-  ;    ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
-   ;    (state_lookup var (rest_of_layers state)))
+      ((not (eq? var (var1 (first_layer state)))) ; check the rest of layer 1
+       (layer_lookup var (layer_cdrs (first_layer state))))
+;      ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
+;       (state_lookup var (rest_of_layers state)))
       (else (layer_lookup var (rest_of_layers state))))))
 
 ; returns the state without the first binding
@@ -123,6 +125,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Layer functions                                                       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define first_layer_vars caar)
+(define first_layer_vals cadar)
 
 ; returns a new layer
 ; parameters: none
