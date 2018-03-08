@@ -298,7 +298,7 @@
                       
 (define m_state_return
   (lambda (expr state break continue return)
-    (return (state_update_val 'return (m_value (return_val expr) state) (m_state (return_val expr) state break continue return)))))
+    (return (state_update_val 'return (return_helper (m_value (return_val expr) state)) (m_state (return_val expr) state break continue return)))))
     
 
 ; returns the updated state after executing a declare & assign statement
