@@ -15,7 +15,7 @@
         (if (eq? 'return (var1 (first_layer state)))
             (state_lookup 'return state)
             (error "no return statement."))
-        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state)))))
+        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state #f #f #f)))))
 
 (define interpret
   (lambda (filename)
@@ -251,7 +251,10 @@
   (lambda (block state break continue return)
     (if (null? block)
         state
-        (remove_layer (m_state_stmtlist block (add_layer state))))))
+        (remove_layer (m_state_stmtlist block (add_layer state)
+                                        (lambda (v) (break (remove-layer v)))
+                                        (lambda (v) (continue (remove-layer v)))
+                                        (lambda (v) (return (remove-layer v))))))))
 
 ; returns the updated state after executing a list of statements
 ; parameters: a list of statements and a state
@@ -259,7 +262,7 @@
   (lambda (stmtlist state break continue return)
     (if (null? stmtlist)
         state
-        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state)))))
+        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state break return continue) break continue return))))
 
 ; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
