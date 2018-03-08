@@ -203,8 +203,8 @@
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
 ; parameters: expression
 (define m_state
-  (lambda (expr state)
-    (m_state_statement expr state)))
+  (lambda (expr state break continue return)
+    (m_state_statement expr state break continue return)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -227,21 +227,22 @@
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
 (define m_state_statement
-  (lambda (stmt state)
+  (lambda (stmt state break continue return)
     (cond
-      ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state))
+      ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state break continue return))
       ((and (eq? 'if (stmt_type stmt))
             (not (eq? (empty_when_no_else stmt) '())))
-       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state))
+       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state break continue return))
       ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state))
       ((and (eq? 'var (stmt_type stmt))
             (not (eq? (empty_when_only_assigning stmt) '())))
-       (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state))
-      ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state))
-      ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
-      ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
-      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))
-;(m_state_return stmt state break continue return))
+       (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state break continue return))
+      ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state break continue return))
+      ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state break continue return))
+      ((eq? 'return (stmt_type stmt)) (m_state_return stmt state break continue return));(toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
+      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state break continue (lambda (v) v)))
+      ((eq? 'break (stmt_type stmt)) (break state))
+      ((eq? 'continue (stmt_type stmt) (continue state))))))
   
 ; returns the updated state after executing a block of statements
 ; parameters: a block of code and a state
