@@ -225,6 +225,7 @@
 (define cond1 cadr)
 (define then-stmt caddr)
 (define else-stmt cadddr)
+(define return_val cadr)
 
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
@@ -234,8 +235,8 @@
       ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state return break continue))
       ((and (eq? 'if (stmt_type stmt))
             (not (eq? (empty_when_no_else stmt) '())))
-       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state return break continue))
       ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state return break continue))
+       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state return break continue))
       ((and (eq? 'var (stmt_type stmt))
             (not (eq? (empty_when_only_assigning stmt) '())))
        (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state return break continue))
@@ -261,7 +262,7 @@
   (lambda (stmtlist state return break continue)
     (if (null? stmtlist)
         state
-        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state)))))
+        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state break return continue) break continue return))))
 
 ; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
