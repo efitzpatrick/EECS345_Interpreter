@@ -4,7 +4,6 @@
 
 (require "simpleParser.scm") ; load parser
 
-
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
 ; and returns the proper value.
 ; Maintains a state for the variables and returns an error message if the user attempts to use a
@@ -76,14 +75,8 @@
        (list (remove_from_layer var (first_layer state)) (rest_of_layers state)))
       (else (state_remove var (rest_of_layers state))))))
 
-(define remove_from_layer
-  (lambda (var layer)
-    (cond
-      ((null? (vars layer)) layer) ; if it's null, just return the layer
-      ((eq? var (var1 layer)) (layer_cdrs layer)) ; if it is the first variable, return the rest of the layer
-      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
-
 ; updates a variable's value without changing its layer
+; parameters: a variable, its new value, and a state
 (define state_update_val
   (lambda (var val state)
     (cond
@@ -114,19 +107,6 @@
 
 ; returns the value of the given variable
 ; parameters: a variable and the state
-;(define state_lookup
-;  (lambda (var state)
-;    (cond
-;      ((state_null? state) (error "No such variable"))
-;      ((layer_empty? (first_layer state)) (layer_lookup var (rest_of_layers state)))
-;      ((eq? var (var1 (first_layer state)))
-;       (layer_lookup var (first_layer state)))
-;      ((not (eq? var (var1 (first_layer state)))) ; check the rest of layer 1
-;       (layer_lookup var (layer_cdrs (first_layer state))))
-;;      ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
-;;       (state_lookup var (rest_of_layers state)))
-;      (else (layer_lookup var (rest_of_layers state))))))
-
 (define state_lookup
   (lambda (var state)
     (cond
@@ -137,9 +117,9 @@
 
 ; returns the state without the first binding
 ; parameters: a state
-(define state_cdrs
-  (lambda (state)
-    (list (var_cdrs state) (val_cdrs state))))
+;(define state_cdrs
+;  (lambda (state)
+;    (list (var_cdrs state) (val_cdrs state))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Layer functions                                                       ;
@@ -168,12 +148,12 @@
 
 ; remove a binding from a layer
 ; parameters: a variable and a layer
-;(define remove_from_layer
-;  (lambda (var layer)
-;    (cond
-;      ((null? (vars layer)) layer)
-;      ((eq? var (var1 layer)) (layer_cdrs layer))
-;      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
+(define remove_from_layer
+  (lambda (var layer)
+    (cond
+      ((null? (vars layer)) layer) ; if it's null, just return the layer
+      ((eq? var (var1 layer)) (layer_cdrs layer)) ; if it is the first variable, return the rest of the layer
+      (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
 ; returns the layer without the first binding
 ; parameters: a layer
@@ -226,9 +206,6 @@
 (define m_state
   (lambda (expr state)
     (m_state_statement expr state)))
-;    (cond
- ;     ((list? expr) (m_value_list expr state))
-  ;    (else (m_value_atom expr state)))))
 
 (define stmt_type car) ; statement type, i.e. if, while, etc
 (define empty_when_no_else cdddr) ; if the if statement has no else block, this will be an empty list
@@ -236,7 +213,10 @@
 (define declared_var cadr)
 (define assigned_val caddr)
 (define stmtlist cdr)
-      
+
+
+; returns the updated state after the statement is evaluated
+; parameters: a statement and a state
 (define m_state_statement
   (lambda (stmt state)
     (cond
@@ -252,7 +232,9 @@
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
       ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v)))))) 
-      
+
+; returns
+; parameters
 (define toAtoms
   (lambda (x)
     (cond
@@ -260,14 +242,15 @@
       ((eq? #f x) 'false)
       (else x))))
 
+; true iff the input is an atom
+; parameters: an input x
 (define atom?
-  (lambda (x) 
+  (lambda (x)
     (and (not (pair? x))
        (not (null? x)))))
-      
 
-;(define list_of_stmts cdr)
-
+; returns the updated state after executing a block of statements
+; parameters: a block of code and a state
 (define m_state_block
   (lambda (block state)
     (if (null? block)
@@ -277,6 +260,8 @@
 (define first_stmt car)
 (define rest_of_stmts cdr)
 
+; returns the updated state after executing a list of statements
+; parameters: a list of statements and a state
 (define m_state_stmtlist
   (lambda (stmtlist state)
     (if (null? stmtlist)
@@ -293,16 +278,16 @@
 (define then-stmt caddr)
 (define else-stmt cadddr)
 
-;If statement
+; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
-; if, then, and else statements
 (define m_state_if_else
   (lambda (cond1 then-stmt else-stmt state)
     (if (m_boolean cond1 state)
         (m_state then-stmt state)
         (m_state else-stmt state))))
 
-; A simple if then statement
+; returns the updated state after executing an if statement without an else
+; parameters: condition, then statment, and state
 (define m_state_if
   (lambda (cond1 then-stmt state)
     (if (m_boolean cond1 state)
@@ -310,8 +295,8 @@
         state)))
 
 
-; while statement
-; parameters: while condition, loop body, state
+; returns the updated state after executing a while statement
+; parameters: while condition, loop body, state, and return
 (define m_state_while
   (lambda (cond1 body state return)
     (if (m_boolean cond1 state)
@@ -319,28 +304,27 @@
  ;       (m_state (m_value body state) (m_state_while cond1 body (m_state body state)))
         state)))
 
-; return statement
+; returns the program's return value
 ; paramteters: what you want to return
-(define m_state_return
-  (lambda (x)
-    (if (state_member? x state)
-        (m_statelookup x state) ;if it is a variable, return the variable
-        (m_value_math(x))))) ;if it is an expression, return the value of the expression
+;(define m_state_return
+;  (lambda (var)
+;    (if (state_member? var state)
+;        (m_statelookup var state) ;if it is a variable, return the variable
+;        (m_value_math(var))))) ;if it is an expression, return the value of the expression
 
-; mstate declare assign is for the situation "var x = 1;". This will creates a variable and assigns it a value at the same time.
+; returns the updated state after executing a declare & assign statement
 ; parameters: the variable and the value
 (define m_state_declare_assign
   (lambda (var_name value state)
     (state_add var_name (m_value value state) state)))
 
-; mstate declare is for the situation "var x;". This  function creates a variable, but assigns it the value 'undef
+; returns the updated state after executing a declare statement
 ; parameters: the variable
 (define m_state_declare
   (lambda (var_name state)
     (state_add var_name 'undef state)))
 
-; mstate assign is for the situation "x = 1;" This function removes the variable from the state and then adds it back
-; to the state with the variable name and the value
+; returns the updated state after executing an assignment statement
 ; parameter: variable and the value
 (define m_state_assign
   (lambda (var_name value state)
@@ -353,6 +337,8 @@
 (define operand1 cadr)
 (define operand2 caddr)
 
+; returns the correct Scheme version of the binary operators
+; parameters: a math binary operator
 (define binary-ops
   (lambda (op)
     (cond
@@ -370,10 +356,14 @@
       ((eq? op '&&) (lambda (x y) (and x y)))
       ((eq? op '||) (lambda (x y) (or x y))))))
 
+; a not equal operator
+; parameters: two values
 (define !=
   (lambda (x y)
     (not (= x y))))
 
+; returns the correct Scheme version of the unary operators
+; parameters: a math unary operator
 (define unary-ops
   (lambda (op)
     (cond
@@ -381,6 +371,7 @@
       ((eq? op '-) (lambda (x) (- 0 x))))))
 
 ; returns the value of an arithemtic expression whether the operator is unary or binary
+; parameters: an expression and a state
 (define m_value_expression
   (lambda (expr state)
     (if (eq? 3 (length expr))
@@ -389,6 +380,7 @@
 
 
 ; returns value of an assignment statement
+; parameters: an expression and a state
 (define m_value_statement
   (lambda (expr state)
     (if (or (eq? (stmt_type expr) '=) (eq? (stmt_type expr) 'var))
@@ -399,6 +391,7 @@
 (define statement '(var = if return))
 
 ; returns a value for part of the parse tree that is a list
+; parameters: an expression and a state
 (define m_value_list
   (lambda (expr state)
     (if (member? (stmt_type expr) statement)
@@ -406,6 +399,7 @@
         (m_value_expression expr state))))
 
 ; changes #t and #f to true and false
+; parameters: an expression
 (define return_helper
   (lambda (expr)
     (cond
@@ -413,7 +407,7 @@
       ((eq? expr #f) 'false)
       (else expr))))
 
-; member? returns true or false depending on if x is in the lis
+; returns true or false depending on if x is in the lis
 ; parameters: atom to find, lis to look in
 (define member?
   (lambda (x lis)
@@ -423,10 +417,11 @@
             (member? x (cdr lis))))))
 
 ; returns a value for part of the parse tree that is an atom
+; parameters: an atom and a state
 (define m_value_atom
-  (lambda (expr state)
+  (lambda (atom state)
     (cond
-      ((or (boolean? expr) (number? expr)) expr)
-      ((eq? expr 'true) #t)
-      ((eq? expr 'false) #f)
-      (else (state_lookup expr state)))))
+      ((or (boolean? atom) (number? atom)) atom)
+      ((eq? atom 'true) #t)
+      ((eq? atom 'false) #f)
+      (else (state_lookup atom state)))))
