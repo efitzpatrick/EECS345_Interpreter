@@ -83,6 +83,17 @@
       ((eq? var (var1 layer)) (layer_cdrs layer)) ; if it is the first variable, return the rest of the layer
       (else (add_to_layer (var1 layer) (val1 layer) (remove_from_layer var (layer_cdrs layer)))))))
 
+; updates a variable's value without changing its layer
+(define state_update_val
+  (lambda (var val state)
+    (cond
+      ((null? state) (error "No such variable."))
+      ((eq? 'no_such_var (layer_lookup var (first_layer state))) ; variable not in layer
+       (cons (first_layer state) (state_update_val var val (rest_of_layers state))))
+      (else (cons  ; variable is in the layer
+             (add_to_layer var val (remove_from_layer var (first_layer state)))
+             (rest_of_layers state))))))
+
 ; returns true iff variable is in the state
 ; parameters: variable and state
 (define state_member?
@@ -103,18 +114,26 @@
 
 ; returns the value of the given variable
 ; parameters: a variable and the state
+;(define state_lookup
+;  (lambda (var state)
+;    (cond
+;      ((state_null? state) (error "No such variable"))
+;      ((layer_empty? (first_layer state)) (layer_lookup var (rest_of_layers state)))
+;      ((eq? var (var1 (first_layer state)))
+;       (layer_lookup var (first_layer state)))
+;      ((not (eq? var (var1 (first_layer state)))) ; check the rest of layer 1
+;       (layer_lookup var (layer_cdrs (first_layer state))))
+;;      ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
+;;       (state_lookup var (rest_of_layers state)))
+;      (else (layer_lookup var (rest_of_layers state))))))
+
 (define state_lookup
   (lambda (var state)
     (cond
-      ((state_null? state) (error "No such variable"))
-      ((layer_empty? (first_layer state)) (layer_lookup var (rest_of_layers state)))
-      ((eq? var (var1 (first_layer state)))
-       (layer_lookup var (first_layer state)))
-      ((not (eq? var (var1 (first_layer state)))) ; check the rest of layer 1
-       (layer_lookup var (layer_cdrs (first_layer state))))
-;      ((eq? var (layer_lookup var (first_layer state))) ; no variable in the first layer
-;       (state_lookup var (rest_of_layers state)))
-      (else (layer_lookup var (rest_of_layers state))))))
+      ((null? state) (error "No such variable"))
+      ((eq? 'no_such_var (layer_lookup var (first_layer state)))
+       (state_lookup var (rest_of_layers state)))
+      (else (layer_lookup var (first_layer state))))))
 
 ; returns the state without the first binding
 ; parameters: a state
@@ -216,10 +235,12 @@
 (define empty_when_only_assigning cddr) ; if the statement is only assigning and not declaring, this will be an empty list
 (define declared_var cadr)
 (define assigned_val caddr)
+(define stmtlist cdr)
       
 (define m_state_statement
   (lambda (stmt state)
     (cond
+      ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state))
       ((and (eq? 'if (stmt_type stmt))
             (not (eq? (empty_when_no_else stmt) '())))
        (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state))
@@ -230,7 +251,7 @@
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
       ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
-      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))      
+      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v)))))) 
       
 (define toAtoms
   (lambda (x)
@@ -245,11 +266,29 @@
        (not (null? x)))))
       
 
+;(define list_of_stmts cdr)
+
+(define m_state_block
+  (lambda (block state)
+    (if (null? block)
+        state
+        (remove_layer (m_state_stmtlist block (add_layer state))))))
+
+(define first_stmt car)
+(define rest_of_stmts cdr)
+
+(define m_state_stmtlist
+  (lambda (stmtlist state)
+    (if (null? stmtlist)
+        state
+        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state)))))
+
+
 ; Ellie Fitzpatrick
 ; eef33
 
-; if statements
 
+; if statements
 (define cond1 cadr)
 (define then-stmt caddr)
 (define else-stmt cadddr)
@@ -300,18 +339,16 @@
   (lambda (var_name state)
     (state_add var_name 'undef state)))
 
-
 ; mstate assign is for the situation "x = 1;" This function removes the variable from the state and then adds it back
 ; to the state with the variable name and the value
 ; parameter: variable and the value
 (define m_state_assign
   (lambda (var_name value state)
     (if (state_member? var_name state)
-        (state_add var_name (m_value value state) (state_remove var_name state)) ;if the variable is in the state, declare the variable
+        (state_update_val var_name (m_value value state) state)
         (error "Variable not declared"))))
 
 ; Taylor Smith tps45
-
 (define operator car)
 (define operand1 cadr)
 (define operand2 caddr)
