@@ -29,7 +29,7 @@
 (define empty_vars (list))  ; empty list of variables
 (define empty_vals (list))  ; empty list of values
 (define list_of_vals cadr)  ; list of the values
-(define var_cdrs cdar)      ; all varables except the first
+(define var_cdrs cdar)      ; all variables except the first
 (define val_cdrs cdadr)     ; all values except the first
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -85,6 +85,13 @@
       (else (cons  ; variable is in the layer
              (add_to_layer var val (remove_from_layer var (first_layer state)))
              (rest_of_layers state))))))
+
+;(define state_remove
+ ; (lambda (var state return)
+  ;  (cond
+   ;   ((null? (vars state)) return state)
+    ;  ((eq? var (state_var1 state)) (state_cdrs state) return)
+     ; (else (state_remove var (state_cdrs state) (lambda (v) (return (state_add (state_var1 state) (state val1 state) v))))))))
 
 ; returns true iff variable is in the state
 ; parameters: variable and state
@@ -283,6 +290,13 @@
 ;    (if (state_member? var state)
 ;        (m_statelookup var state) ;if it is a variable, return the variable
 ;        (m_value_math(var))))) ;if it is an expression, return the value of the expression
+;state_update_val( var val state
+;state var val
+                      
+(define m_state_return
+  (lambda (expr state break continue return)
+    (return (state_update_val 'return (m_value (cadr expr) state) (m_state (cadr expr) state break continue return)))))
+    
 
 ; returns the updated state after executing a declare & assign statement
 ; parameters: the variable and the value
