@@ -241,7 +241,8 @@
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state))
       ((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state (lambda (v) v))))))
-
+;(m_state_return stmt state break continue return))
+  
 ; returns the updated state after executing a block of statements
 ; parameters: a block of code and a state
 (define m_state_block
