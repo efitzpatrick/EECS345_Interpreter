@@ -3,6 +3,7 @@
 ; Taylor Smith tps45
 
 (require "simpleParser.scm") ; load parser
+(require racket/trace)
 
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
 ; and returns the proper value.
@@ -249,8 +250,8 @@
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state return break continue))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state return break continue))
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
-      ((eq? 'break (stmt_type stmt)) (break (remove_layer state)))
-      ((eq? 'continue (stmt_type stmt)) (continue (remove_layer state)))
+      ((eq? 'break (stmt_type stmt)) (break (cons 'broken (remove_layer state))))
+      ((eq? 'continue (stmt_type stmt)) (continue (cons 'conted (remove_layer state))))
       ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue))
       ((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
@@ -292,31 +293,21 @@
 
 ; returns the updated state after executing a while statement
 ; parameters: while condition, loop body, state, and return
-(define m_state_while
-  (call/cc
-   (lambda (continue_new)
+(define m_state_while_helper
      (lambda (cond1 body state return break continue)
-       (call/cc
-        (lambda (break)
           (if (m_boolean cond1 state) 
               (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
-              state)))))))
-
-(define m_state_while_break
+              state)))
+      
+(define m_state_while
   (lambda (cond1 body state return break continue)
-    (if (m_boolean cond1 state return break continue)
-        (m_state_while_break cond1 body
-                             (call/cc
-                              (lambda (continue)
-                                (m_state_while_continue cond1 body state return break continue)))
-                             return break continue)
-        (continue state))))
-
-(define m_state_while_continue
-  (lambda (cond1 body state return break continue)
-    (m_state body state return break continue)))
-    
-        
+    (let* ((computed (call/cc (lambda (break)
+                       (call/cc (lambda (continue)
+                                  (m_state_while cond1 body state return break continue)))))))
+            (cond
+              ((eq? 'conted (car computed)) (m_state_while cond1 (cadr computed) return break continue))
+              ((eq? 'broken (car computed)) (cadr computed))
+              (else state)))))     
     
 
 
