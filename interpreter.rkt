@@ -226,6 +226,11 @@
 (define then-stmt caddr)
 (define else-stmt cadddr)
 (define return_val cadr)
+(define try-body cadr)
+(define catch-stmt caddr)
+(define catch-block caddr)
+(define finally-stmt cadddr)
+(define finally-block cadr)
 
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
@@ -245,6 +250,7 @@
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
       ((eq? 'break (stmt_type stmt)) (break state))
       ((eq? 'continue (stmt_type stmt)) (continue state))
+      ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-block (catch-stmt stmt)) (finally-block (finally-stmt stmt)) state return break continue))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
 ;(m_state_return stmt state break continue return))
@@ -328,6 +334,15 @@
     (if (state_member? var_name state)
         (state_update_val var_name (m_value value state) state)
         (error "Variable not declared"))))
+
+; returns the updated state after executing a try/catch/finally block
+; parameters: a try body, a catch block, a finally block, a state, return, break, and continue
+(define m_state_try
+  (lambda (try-body catch-block finally-block state return break continue)
+    (call/cc
+     (lambda (catch)
+       (cond
+         )))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
