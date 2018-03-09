@@ -52,7 +52,7 @@
   (lambda (state)
     (cons (new_layer) state)))
 
-; remove a layer from the state
+; removes the top layer from the state
 ; parameter: a state
 (define remove_layer
   (lambda (state)
@@ -248,9 +248,9 @@
       ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state return break continue))
       ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state return break continue))
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
-      ((eq? 'break (stmt_type stmt)) (break state))
-      ((eq? 'continue (stmt_type stmt)) (continue state))
-      ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-block (catch-stmt stmt)) (finally-block (finally-stmt stmt)) state return break continue))
+      ((eq? 'break (stmt_type stmt)) (break (remove_layer state)))
+      ((eq? 'continue (stmt_type stmt)) (continue (remove_layer state)))
+      ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
 ;(m_state_return stmt state break continue return))
@@ -293,11 +293,26 @@
   (lambda (cond1 body state return break continue)
     (call/cc
      (lambda (break)
-       (call/cc
-        (lambda (continue)
-          (if (m_boolean cond1 state)
-              (m_state_while cond1 body (m_state body state return break continue) return break continue)
-              state)))))))
+       (if (m_boolean cond1 state)
+           (m_state_while cond1 body (m_state body state return break continue) return break continue)
+           state)))))
+
+(define m_state_while_break
+  (lambda (cond1 body state return break continue)
+    (if (m_boolean cond1 state return break continue)
+        (m_state_while_break cond1 body
+                             (call/cc
+                              (lambda (continue)
+                                (m_state_while_continue cond1 body state return break continue)))
+                             return break continue)
+        (continue state))))
+
+(define m_state_while_continue
+  (lambda (cond1 body state return break continue)
+    (m_state body state return break continue)))
+    
+        
+    
 
 
 ; returns the program's return value
@@ -336,14 +351,26 @@
         (error "Variable not declared"))))
 
 ; returns the updated state after executing a try/catch/finally block
-; parameters: a try body, a catch block, a finally block, a state, return, break, and continue
+; parameters: a try body, a catch statement, a finally statement, a state, return, break, and continue
 (define m_state_try
-  (lambda (try-body catch-block finally-block state return break continue)
-    (call/cc
-     (lambda (catch)
-       (cond
-         )))))
-
+  (lambda (try-body catch-stmt finally-stmt state return break continue)
+    (cond
+      ((and (catch? catch-stmt)      ; there is both a catch and finally block
+            (finally? finally-stmt))
+       (m_state_block (finally-block finally-stmt)
+                      (m_state_block (catch-block catch-stmt)
+                                     (m_state_try_helper try-body state return break continue) return break continue) return break continue))
+      ((catch? catch-stmt) ; there is only a catch statement
+       (m_state_block (catch-block catch-stmt) (m_state_try_helper try-body state return break continue) return break continue))
+      ((finally? finally-stmt) ; there is only a finally statement
+       (m_state_block (finally-block finally-stmt) (m_state_try_helper try-body state return break continue) return break continue)))))
+    
+(define m_state_try_helper
+ (lambda (try-body state return break continue)
+   (call/cc
+    (lambda (throw)
+      (m_state_block try-body state return throw continue)))))
+                   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Math operations                                                                                                   ;
@@ -464,3 +491,19 @@
         (if (equal? x (car lis))
             #t
             (member? x (cdr lis))))))
+
+; returns true iff a catch stmt exists
+; parameters: a statement
+(define catch?
+  (lambda (stmt)
+    (if (not (eq? (catch-block stmt) '()))
+        #t
+        #f)))
+
+; returns true iff a finally stmt exists
+; parameters: a statement
+(define finally?
+  (lambda (stmt)
+    (if (not (eq? (finally-block stmt) '()))
+        #t
+        #f)))
