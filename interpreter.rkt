@@ -255,6 +255,7 @@
       ((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
+
 ;(m_state_return stmt state break continue return))
   
 ; returns the updated state after executing a block of statements
@@ -292,12 +293,14 @@
 ; returns the updated state after executing a while statement
 ; parameters: while condition, loop body, state, and return
 (define m_state_while
-  (lambda (cond1 body state return break continue)
-    (call/cc
-     (lambda (break)
-       (if (m_boolean cond1 state)
-           (m_state_while cond1 body (m_state body state return break continue) return break continue)
-           state)))))
+  (call/cc
+   (lambda (continue_new)
+     (lambda (cond1 body state return break continue)
+       (call/cc
+        (lambda (break)
+          (if (m_boolean cond1 state) 
+              (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
+              state)))))))
 
 (define m_state_while_break
   (lambda (cond1 body state return break continue)
