@@ -1,10 +1,9 @@
 ; Giuliana Conte gdc24
 ; Ellie Fitzpatrick eef33
 ; Taylor Smith tps45
-
+#lang racket
 (require "simpleParser.scm") ; load parser
 (require racket/trace)
-
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
 ; and returns the proper value.
 ; Maintains a state for the variables and returns an error message if the user attempts to use a
@@ -296,20 +295,37 @@
 (define m_state_while_helper
      (lambda (cond1 body state return break continue throw)
           (if (m_boolean cond1 state) 
+<<<<<<< HEAD
               (m_state_while cond1 body (m_state body state return break continue) return break continue_new throw)
+=======
+              (m_state_while cond1 body (m_state body state return break continue) return break continue)
+>>>>>>> 1ca32fda0850cfdee7f1b53be27239e72584454e
               state)))
       
 (define m_state_while
   (lambda (cond1 body state return break continue throw)
     (let* ((computed (call/cc (lambda (break)
                        (call/cc (lambda (continue)
+<<<<<<< HEAD
                                   (m_state_while cond1 body state return break continue throw)))))))
             (cond
               ((eq? 'conted (car computed)) (m_state_while cond1 (cadr computed) return break continue throw))
+=======
+                                  (m_state_while_helper cond1 body state return break continue)))))))
+            (cond
+              ((eq? 'conted (car computed)) (m_state_while cond1 body (cadr computed) return break continue))
+>>>>>>> 1ca32fda0850cfdee7f1b53be27239e72584454e
               ((eq? 'broken (car computed)) (cadr computed))
               (else state)))))     
-    
 
+
+(trace m_state_while)
+(trace m_state_statement)
+(trace m_state_while_helper)
+(trace m_state)
+;(if (m_boolean cond1 state) 
+ ;             (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
+  ;            state)))))))
 
 ; returns the program's return value
 ; paramteters: what you want to return
