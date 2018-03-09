@@ -1,10 +1,9 @@
 ; Giuliana Conte gdc24
 ; Ellie Fitzpatrick eef33
 ; Taylor Smith tps45
-
+#lang racket
 (require "simpleParser.scm") ; load parser
 (require racket/trace)
-
 ; Takes a filename, calls parser with the filename, evaluates the parse tree returned by parser,
 ; and returns the proper value.
 ; Maintains a state for the variables and returns an error message if the user attempts to use a
@@ -252,8 +251,8 @@
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
       ((eq? 'break (stmt_type stmt)) (break (cons 'broken (remove_layer state))))
       ((eq? 'continue (stmt_type stmt)) (continue (cons 'conted (remove_layer state))))
-      ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue))
-      ((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
+      ;((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue))
+      ;((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
 
@@ -296,20 +295,27 @@
 (define m_state_while_helper
      (lambda (cond1 body state return break continue)
           (if (m_boolean cond1 state) 
-              (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
+              (m_state_while cond1 body (m_state body state return break continue) return break continue)
               state)))
       
 (define m_state_while
   (lambda (cond1 body state return break continue)
     (let* ((computed (call/cc (lambda (break)
                        (call/cc (lambda (continue)
-                                  (m_state_while cond1 body state return break continue)))))))
+                                  (m_state_while_helper cond1 body state return break continue)))))))
             (cond
-              ((eq? 'conted (car computed)) (m_state_while cond1 (cadr computed) return break continue))
+              ((eq? 'conted (car computed)) (m_state_while cond1 body (cadr computed) return break continue))
               ((eq? 'broken (car computed)) (cadr computed))
               (else state)))))     
-    
 
+
+(trace m_state_while)
+(trace m_state_statement)
+(trace m_state_while_helper)
+(trace m_state)
+;(if (m_boolean cond1 state) 
+ ;             (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
+  ;            state)))))))
 
 ; returns the program's return value
 ; paramteters: what you want to return
@@ -348,37 +354,37 @@
 
 ; returns the updated state after executing a try/catch/finally block
 ; parameters: a try body, a catch statement, a finally statement, a state, return, break, and continue
-(define m_state_try
-  (lambda (try-body catch-stmt finally-stmt state return break continue)
-    (cond
-      ((and (catch? catch-stmt)      ; there is both a catch and finally block
-            (finally? finally-stmt))
-       (something))
+;(define m_state_try
+ ; (lambda (try-body catch-stmt finally-stmt state return break continue)
+  ;  (cond
+   ;   ((and (catch? catch-stmt)      ; there is both a catch and finally block
+    ;        (finally? finally-stmt))
+     ;  (something))
 ;       (m_state_block (finally-block finally-stmt)
 ;                      (remove_layer (m_state_try_catch try-body catch-stmt finally-stmt (add_layer state) return break continue))))
-      ((catch? catch-stmt) ; there is only a catch statement
-       (m_state_block (catch-block catch-stmt) (m_state_try_helper try-body state return break continue) return break continue))
-      ((finally? finally-stmt) ; there is only a finally statement
-       (m_state_block (finally-block finally-stmt) (m_state_try_helper try-body state return break continue) return break continue)))))
+      ;((catch? catch-stmt) ; there is only a catch statement
+       ;(m_state_block (catch-block catch-stmt) (m_state_try_helper try-body state return break continue) return break continue))
+      ;((finally? finally-stmt) ; there is only a finally statement
+       ;(m_state_block (finally-block finally-stmt) (m_state_try_helper try-body state return break continue) return break continue)))))
 
 
 (define m_state_finally
-  (lambda finally-stmt state return break continue
+  (lambda (finally-stmt state return break continue)
     (call/cc
      (lambda (finally)
        (m_state_block finally-stmt state return break continue))) return break continue))
 
 (define m_state_catch
-  (lambda catch-stmt state return break continue
+  (lambda (catch-stmt state return break continue)
     (call/cc
      (lambda (catch)
-       (m_state_block catch-stmt state return break continue))) return break conintue))
+       (m_state_block catch-stmt state return break continue))) return break continue))
 
-(define m_state_try
-  (lambda try-stmt state return break continue
-    (call/cc
-     (lambda (break)
-       (m_state_statement try-stmt state return break continue)))))
+;(define m_state_try
+ ; (lambda try-stmt state return break continue
+  ;  (call/cc
+   ;  (lambda (break)
+    ;   (m_state_statement try-stmt state return break continue)))))
 
 
 (define m_state_throw
