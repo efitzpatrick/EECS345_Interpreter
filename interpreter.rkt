@@ -16,7 +16,7 @@
         (if (eq? 'return (var1 (first_layer state)))
             (state_lookup 'return state)
             (error "no return statement."))
-        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return #f #f) return))))
+        (interpret_parsetree (cdr parsetree) (m_state (car parsetree) state return #f #f #f) return))))
 
 (define interpret
   (lambda (filename)
@@ -206,8 +206,8 @@
 ; m_state returns the updated state after the expression from the parse tree has been evaluated
 ; parameters: expression
 (define m_state
-  (lambda (expr state return break continue)
-    (m_state_statement expr state return break continue)))
+  (lambda (expr state return break continue throw)
+    (m_state_statement expr state return break continue throw)))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,75 +237,75 @@
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
 (define m_state_statement
-  (lambda (stmt state return break continue)
+  (lambda (stmt state return break continue throw)
     (cond
-      ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state return break continue))
+      ((eq? 'begin (stmt_type stmt)) (m_state_block (stmtlist stmt) state return break continue throw))
       ((and (eq? 'if (stmt_type stmt))
             (not (eq? (empty_when_no_else stmt) '())))
-       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state return break continue))
-      ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state return break continue))
+       (m_state_if_else (cond1 stmt) (then-stmt stmt) (else-stmt stmt) state return break continue throw))
+      ((eq? 'if (stmt_type stmt)) (m_state_if (cond1 stmt) (then-stmt stmt) state return break continue throw))
       ((and (eq? 'var (stmt_type stmt))
             (not (eq? (empty_when_only_assigning stmt) '())))
-       (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state return break continue))
-      ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state return break continue))
-      ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state return break continue))
+       (m_state_declare_assign (declared_var stmt) (assigned_val stmt) state return break continue throw))
+      ((eq? '= (stmt_type stmt)) (m_state_assign (declared_var stmt) (assigned_val stmt) state return break continue throw))
+      ((eq? 'var (stmt_type stmt)) (m_state_declare (declared_var stmt) state return break continue throw))
       ((eq? 'return (stmt_type stmt)) (return (return_helper (m_value (declared_var stmt) state))))
       ((eq? 'break (stmt_type stmt)) (break (cons 'broken (remove_layer state))))
       ((eq? 'continue (stmt_type stmt)) (continue (cons 'conted (remove_layer state))))
       ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue throw))
       ((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
-      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
+      ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue throw)))))
 
 ;(m_state_return stmt state break continue return))
   
 ; returns the updated state after executing a block of statements
 ; parameters: a block of code and a state
 (define m_state_block
-  (lambda (block state return break continue)
+  (lambda (block state return break continue throw)
     (if (null? block) 
         state
-        (remove_layer (m_state_stmtlist block (add_layer state) return break continue)))))
+        (remove_layer (m_state_stmtlist block (add_layer state) return break continue throw)))))
 
 ; returns the updated state after executing a list of statements
 ; parameters: a list of statements and a state
 (define m_state_stmtlist
-  (lambda (stmtlist state return break continue)
+  (lambda (stmtlist state return break continue throw)
     (if (null? stmtlist)
         state
-        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state break return continue) break continue return))))
+        (m_state_stmtlist (rest_of_stmts stmtlist) (m_state (first_stmt stmtlist) state break return continue throw) break continue return throw))))
 
 ; returns the updated state after executing an if/else statement
 ; parameters: condition, then statment, else statement, and state
 (define m_state_if_else
-  (lambda (cond1 then-stmt else-stmt state return break continue)
+  (lambda (cond1 then-stmt else-stmt state return break continue throw)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state return break continue)
-        (m_state else-stmt state return break continue))))
+        (m_state then-stmt state return break continue throw)
+        (m_state else-stmt state return break continue throw))))
 
 ; returns the updated state after executing an if statement without an else
 ; parameters: condition, then statment, and state
 (define m_state_if
-  (lambda (cond1 then-stmt state return break continue)
+  (lambda (cond1 then-stmt state return break continue throw)
     (if (m_boolean cond1 state)
-        (m_state then-stmt state return break continue)
+        (m_state then-stmt state return break continue throw)
         state)))
 
 ; returns the updated state after executing a while statement
 ; parameters: while condition, loop body, state, and return
 (define m_state_while_helper
-     (lambda (cond1 body state return break continue)
+     (lambda (cond1 body state return break continue throw)
           (if (m_boolean cond1 state) 
-              (m_state_while cond1 body (m_state body state return break continue) return break continue_new)
+              (m_state_while cond1 body (m_state body state return break continue) return break continue_new throw)
               state)))
       
 (define m_state_while
-  (lambda (cond1 body state return break continue)
+  (lambda (cond1 body state return break continue throw)
     (let* ((computed (call/cc (lambda (break)
                        (call/cc (lambda (continue)
-                                  (m_state_while cond1 body state return break continue)))))))
+                                  (m_state_while cond1 body state return break continue throw)))))))
             (cond
-              ((eq? 'conted (car computed)) (m_state_while cond1 (cadr computed) return break continue))
+              ((eq? 'conted (car computed)) (m_state_while cond1 (cadr computed) return break continue throw))
               ((eq? 'broken (car computed)) (cadr computed))
               (else state)))))     
     
@@ -322,26 +322,26 @@
 ;state var val
                       
 (define m_state_return
-  (lambda (expr state return break continue)
-    (return (state_update_val 'return (m_value (cadr expr) state) (m_state (cadr expr) state break continue return break continue)))))
+  (lambda (expr state return break continue throw)
+    (return (state_update_val 'return (m_value (cadr expr) state) (m_state (cadr expr) state return break continue) break continue throw))))
     
 
 ; returns the updated state after executing a declare & assign statement
 ; parameters: the variable and the value
 (define m_state_declare_assign
-  (lambda (var_name value state return break continue)
+  (lambda (var_name value state return break continue throw)
     (state_add var_name (m_value value state) state)))
 
 ; returns the updated state after executing a declare statement
 ; parameters: the variable
 (define m_state_declare
-  (lambda (var_name state return break continue)
+  (lambda (var_name state return break continue throw)
     (state_add var_name 'undef state)))
 
 ; returns the updated state after executing an assignment statement
 ; parameter: variable and the value
 (define m_state_assign
-  (lambda (var_name value state return break continue)
+  (lambda (var_name value state return break continue throw)
     (if (state_member? var_name state)
         (state_update_val var_name (m_value value state) state)
         (error "Variable not declared"))))
@@ -350,7 +350,7 @@
 ; parameters: a try body, a catch statement, a finally statement, a state, return, break, continue and throw
 (define m_state_try
   (lambda (try-body catch-stmt finally-stmt state return break continue throw)
-    (m_state_finally finally (call/cc
+    (m_state_finally finally-stmt (call/cc
                               (lambda (leave)
                                 (leave (m_state_block
                                         try-body state return break continue (lambda (try-state exception)
@@ -360,14 +360,14 @@
   (lambda (finally-stmt state return break continue throw)
     (if (null? finally-stmt)
         state
-        (m_block (finally-body finally-stmt) state return break continue throw))))
+        (m_state_block (finally-block finally-stmt) state return break continue throw))))
 
 
 (define m_state_catch
   (lambda (catch-stmt exception state return break continue throw)
     (if (null? catch-stmt)
         state
-        (m_block (catch-body catch-stmt) (add_to_state (exception-val catch-stmt) (m_value exception) (add_layer state)) return break continue throw))))
+        (m_state_block (catch-block catch-stmt) (add_to_state (exception-val catch-stmt) (m_value exception) (add_layer state)) return break continue throw))))
 
       
 
