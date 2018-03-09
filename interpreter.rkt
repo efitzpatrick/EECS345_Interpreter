@@ -231,6 +231,7 @@
 (define catch-block caddr)
 (define finally-stmt cadddr)
 (define finally-block cadr)
+(define throw-val cadr)
 
 ; returns the updated state after the statement is evaluated
 ; parameters: a statement and a state
@@ -251,6 +252,7 @@
       ((eq? 'break (stmt_type stmt)) (break (remove_layer state)))
       ((eq? 'continue (stmt_type stmt)) (continue (remove_layer state)))
       ((eq? 'try (stmt_type stmt)) (m_state_try (try-body stmt) (catch-stmt stmt) (finally-stmt stmt) state return break continue))
+      ((eq? 'throw (stmt_type stmt)) (m_state_throw ....))
       ;((eq? 'return (stmt_type stmt)) (toAtoms (state_add 'return (return_helper (m_value (declared_var stmt) state)) state))); (state_remove 'return state))))
       ((eq? 'while (stmt_type stmt)) (m_state_while (cond1 stmt) (then-stmt stmt) state return break continue)))))
 ;(m_state_return stmt state break continue return))
@@ -357,19 +359,57 @@
     (cond
       ((and (catch? catch-stmt)      ; there is both a catch and finally block
             (finally? finally-stmt))
-       (m_state_block (finally-block finally-stmt)
-                      (m_state_block (catch-block catch-stmt)
-                                     (m_state_try_helper try-body state return break continue) return break continue) return break continue))
+       (something))
+;       (m_state_block (finally-block finally-stmt)
+;                      (remove_layer (m_state_try_catch try-body catch-stmt finally-stmt (add_layer state) return break continue))))
       ((catch? catch-stmt) ; there is only a catch statement
        (m_state_block (catch-block catch-stmt) (m_state_try_helper try-body state return break continue) return break continue))
       ((finally? finally-stmt) ; there is only a finally statement
        (m_state_block (finally-block finally-stmt) (m_state_try_helper try-body state return break continue) return break continue)))))
-    
-(define m_state_try_helper
- (lambda (try-body state return break continue)
-   (call/cc
-    (lambda (throw)
-      (m_state_block try-body state return throw continue)))))
+
+
+(define m_state_finally
+  (lambda finally-stmt state return break continue
+    (call/cc
+     (lambda (finally)
+       (m_state_block finally-stmt state return break continue))) return break continue))
+
+(define m_state_catch
+  (lambda catch-stmt state return break continue
+    (call/cc
+     (lambda (catch)
+       (m_state_block catch-stmt state return break continue))) return break conintue))
+
+(define m_state_try
+  (lambda try-stmt state return break continue
+    (call/cc
+     (lambda (break)
+       (m_state_statement try-stmt state return break continue)))))
+
+
+(define m_state_throw
+  (lambda (catch-stmt throw-stmt state return break continue)
+    (m_state_catch catch-stmt (m_value (throw-val throw-stmt) state) state return break continue)))
+
+;(lambda (t) (throw
+;             (M_state_catch stmt
+;                            (car t)
+;                            (add_layer (remove_layer (cadr t)))
+;                            return break continue)))
+
+
+(define m_state_try_catch
+  (lambda (try-body catch-stmt finally-stmt state return break continue)
+    (call/cc
+     (lambda (throw)
+       (m_state try-body state (lambda (try-body) (throw catch-stmt throw state return break continue)) break continue)))))
+
+
+;(define m_state_try_helper
+; (lambda (try-body state return break continue)
+;   (call/cc
+;    (lambda (throw)
+;      (m_state_block try-body state return throw continue)))))
                    
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
